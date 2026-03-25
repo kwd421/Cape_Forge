@@ -1,0 +1,11 @@
+.DS_Store
+.build/
+.cache/
+.swiftpm-cache/
+.swiftpm-config/
+.swiftpm-security/
+dist/
+tmp/
+__pycache__/
+*.pyc
+
