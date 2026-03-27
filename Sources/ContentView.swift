@@ -2,28 +2,30 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var controller: CursorController
+    @ObservedObject private var localization = LocalizationController.shared
 
     var body: some View {
+        let _ = localization.selectedLanguage
         VStack(alignment: .leading, spacing: 14) {
             Text("Cape Forge")
                 .font(.headline)
 
-            Text(controller.selectedFolderURL?.lastPathComponent ?? "커서 폴더를 선택하세요")
+            Text(controller.selectedFolderURL?.lastPathComponent ?? Localized.string("app.chooseCursorFolder"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
             Label(
                 controller.selectedFolderIsValid
-                    ? "\(controller.resolvedRoleCount)개 역할 준비됨"
-                    : "폴더 확인 필요",
+                    ? Localized.string("app.rolesReady", controller.resolvedRoleCount)
+                    : Localized.string("app.folderRequired"),
                 systemImage: controller.selectedFolderIsValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
             )
             .font(.footnote)
             .foregroundStyle(controller.selectedFolderIsValid ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.orange))
 
             HStack(spacing: 8) {
-                Button("설정 열기") {
+                Button(Localized.string("app.openSettings")) {
                     (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
                 }
             }
@@ -35,7 +37,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button("종료") {
+            Button(Localized.string("app.quit")) {
                 NSApp.terminate(nil)
             }
         }
@@ -46,9 +48,11 @@ struct ContentView: View {
 
 struct SettingsView: View {
     @ObservedObject var controller: CursorController
+    @ObservedObject private var localization = LocalizationController.shared
     @State private var selection: CursorRole? = .arrow
 
     var body: some View {
+        let _ = localization.selectedLanguage
         VStack(spacing: 0) {
             NavigationSplitView {
                 List(CursorRole.allCases, selection: $selection) { role in
@@ -57,7 +61,7 @@ struct SettingsView: View {
                             .tag(role)
                     }
                 }
-                .navigationTitle("커서")
+                .navigationTitle(Localized.string("app.cursors"))
                 .frame(minWidth: 230)
             } detail: {
                 if let role = selection, let assignment = controller.assignment(for: role) {
@@ -67,9 +71,9 @@ struct SettingsView: View {
                         Image(systemName: "cursorarrow")
                             .font(.system(size: 30))
                             .foregroundStyle(.secondary)
-                        Text("불러온 커서가 없습니다")
+                        Text(Localized.string("app.noCursorLoaded"))
                             .font(.headline)
-                        Text("커서 폴더를 불러온 뒤 왼쪽 목록에서 역할을 고르면 해당 커서를 표시합니다.")
+                        Text(Localized.string("app.loadCursorFolderHint"))
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
@@ -79,7 +83,7 @@ struct SettingsView: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Mousecape로 내보내기…") {
+                Button(Localized.string("app.exportToMousecape")) {
                     controller.exportMousecapeCape()
                 }
             }
@@ -92,8 +96,10 @@ struct SettingsView: View {
 
 struct CursorRoleRow: View {
     let assignment: CursorAssignment
+    @ObservedObject private var localization = LocalizationController.shared
 
     var body: some View {
+        let _ = localization.selectedLanguage
         HStack(spacing: 10) {
             Image(systemName: statusSymbolName)
                 .foregroundStyle(statusColor)
@@ -101,9 +107,6 @@ struct CursorRoleRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(assignment.role.displayName)
-                Text(assignment.role.englishName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -128,36 +131,38 @@ struct CursorRoleRow: View {
     }
 
     private var subtitle: String {
-        if !assignment.isResolved { return "자동 매핑 실패" }
-        if assignment.usesArrowFallback { return "자동 매핑 실패 · 일반 커서 대체" }
-        if assignment.isOverride { return assignment.sourceURL?.lastPathComponent ?? "수동 지정" }
-        return assignment.sourceURL?.lastPathComponent ?? "자동 매핑"
+        if !assignment.isResolved { return Localized.string("app.automaticMatchFailed") }
+        if assignment.usesArrowFallback { return Localized.string("app.automaticMatchFailedArrowFallback") }
+        if assignment.isOverride { return assignment.sourceURL?.lastPathComponent ?? Localized.string("app.manualOverride") }
+        return assignment.sourceURL?.lastPathComponent ?? Localized.string("app.automaticallyMatched")
     }
 }
 
 struct CursorRoleDetailView: View {
     @ObservedObject var controller: CursorController
     let assignment: CursorAssignment
+    @ObservedObject private var localization = LocalizationController.shared
 
     var body: some View {
+        let _ = localization.selectedLanguage
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsHeader(controller: controller)
 
                 if let appliedPreview = assignment.appliedPreview {
                     PreviewGroup(
-                        subtitle: assignment.sourceURL?.lastPathComponent ?? "폴더에서 자동 매핑된 파일",
+                        subtitle: assignment.sourceURL?.lastPathComponent ?? Localized.string("app.automaticallyMatchedFromFolder"),
                         animation: appliedPreview
                     ) {
-                        Button("커서 파일 변경…") {
+                        Button(Localized.string("app.changeCursorFile")) {
                             controller.chooseOverride(for: assignment.role)
                         }
                     }
                 } else {
                     EmptyPreviewGroup(
-                        subtitle: assignment.sourceURL?.lastPathComponent ?? "불러온 커서가 없습니다"
+                        subtitle: assignment.sourceURL?.lastPathComponent ?? Localized.string("app.noCursorLoaded")
                     ) {
-                        Button("커서 파일 변경…") {
+                        Button(Localized.string("app.changeCursorFile")) {
                             controller.chooseOverride(for: assignment.role)
                         }
                     }
@@ -166,29 +171,27 @@ struct CursorRoleDetailView: View {
                 GroupBox {
                     VStack(alignment: .leading, spacing: 14) {
                         if assignment.usesArrowFallback {
-                            Label("자동 매칭되는 전용 커서를 찾지 못해 이 테마의 일반 커서로 대체했습니다.", systemImage: "exclamationmark.triangle.fill")
+                            Label(Localized.string("app.arrowFallbackDescription"), systemImage: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.orange)
                         }
-                        DetailItem(title: "역할") {
+                        DetailItem(title: Localized.string("app.role")) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(assignment.role.displayName)
-                                Text(assignment.role.englishName)
-                                    .foregroundStyle(.secondary)
                             }
                         }
-                        DetailItem(title: "Mousecape") {
+                        DetailItem(title: Localized.string("app.mousecape")) {
                             Text(assignment.role.mousecapeMappingDescription)
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        DetailItem(title: "현재 소스") {
-                            Text(assignment.sourceURL?.path ?? "선택한 폴더 안에서 자동 매핑")
+                        DetailItem(title: Localized.string("app.currentSource")) {
+                            Text(assignment.sourceURL?.path ?? Localized.string("app.automaticallyMatchedInsideSelectedFolder"))
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
                         if assignment.usesArrowFallback {
-                            DetailItem(title: "상태") {
-                                Text("자동 매핑 실패 (일반 커서 대체)")
+                            DetailItem(title: Localized.string("app.status")) {
+                                Text(Localized.string("app.automaticMatchFailedArrowFallbackShort"))
                                     .foregroundStyle(.orange)
                             }
                         }
@@ -207,20 +210,22 @@ struct CursorRoleDetailView: View {
 
 struct SettingsHeader: View {
     @ObservedObject var controller: CursorController
+    @ObservedObject private var localization = LocalizationController.shared
 
     var body: some View {
+        let _ = localization.selectedLanguage
         GroupBox {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("커서 폴더")
+                        Text(Localized.string("app.cursorFolder"))
                             .font(.headline)
-                        Text(controller.selectedFolderURL?.path ?? "선택된 폴더 없음")
+                        Text(controller.selectedFolderURL?.path ?? Localized.string("app.noFolderSelected"))
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                     }
                     Spacer()
-                    Button("폴더 선택…") {
+                    Button(Localized.string("app.chooseFolder")) {
                         controller.chooseThemeFolder()
                     }
                 }
@@ -237,6 +242,7 @@ struct PreviewGroup<TrailingAction: View>: View {
     let subtitle: String
     let animation: CursorAnimation
     let trailingAction: TrailingAction
+    @ObservedObject private var localization = LocalizationController.shared
 
     init(
         subtitle: String,
@@ -249,6 +255,7 @@ struct PreviewGroup<TrailingAction: View>: View {
     }
 
     var body: some View {
+        let _ = localization.selectedLanguage
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -277,8 +284,10 @@ struct PreviewGroup<TrailingAction: View>: View {
 struct DetailItem<Content: View>: View {
     let title: String
     @ViewBuilder var content: Content
+    @ObservedObject private var localization = LocalizationController.shared
 
     var body: some View {
+        let _ = localization.selectedLanguage
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.title3.weight(.semibold))
@@ -294,6 +303,7 @@ struct DetailItem<Content: View>: View {
 struct EmptyPreviewGroup<TrailingAction: View>: View {
     let subtitle: String
     let trailingAction: TrailingAction
+    @ObservedObject private var localization = LocalizationController.shared
 
     init(
         subtitle: String,
@@ -304,6 +314,7 @@ struct EmptyPreviewGroup<TrailingAction: View>: View {
     }
 
     var body: some View {
+        let _ = localization.selectedLanguage
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -318,7 +329,7 @@ struct EmptyPreviewGroup<TrailingAction: View>: View {
                     Image(systemName: "cursorarrow")
                         .font(.system(size: 28))
                         .foregroundStyle(.tertiary)
-                    Text("커서를 불러오면 여기에 표시됩니다.")
+                    Text(Localized.string("app.cursorWillAppearHere"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

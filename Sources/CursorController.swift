@@ -35,45 +35,23 @@ enum CursorRole: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .arrow: return "일반 선택"
-        case .text: return "텍스트 선택"
-        case .link: return "링크 선택"
-        case .location: return "드래그"
-        case .precision: return "정밀도 선택"
-        case .move: return "이동"
-        case .unavailable: return "사용 불가"
-        case .busy: return "사용 중"
-        case .working: return "대기"
-        case .help: return "도움말"
-        case .handwriting: return "손글씨"
-        case .person: return "셀 선택"
-        case .alternate: return "바로가기"
-        case .verticalResize: return "수직 크기 조절"
-        case .horizontalResize: return "수평 크기 조절"
-        case .diagonalResizeNWSE: return "대각선 크기 조절 1"
-        case .diagonalResizeNESW: return "대각선 크기 조절 2"
-        }
-    }
-
-    var englishName: String {
-        switch self {
-        case .arrow: return "Arrow"
-        case .text: return "Text"
-        case .link: return "Link"
-        case .location: return "Drag"
-        case .precision: return "Precision"
-        case .move: return "Move"
-        case .unavailable: return "Unavailable"
-        case .busy: return "Busy"
-        case .working: return "Wait"
-        case .help: return "Help"
-        case .handwriting: return "Handwriting"
-        case .person: return "Cell"
-        case .alternate: return "Alias"
-        case .verticalResize: return "Vertical Resize"
-        case .horizontalResize: return "Horizontal Resize"
-        case .diagonalResizeNWSE: return "Diagonal Resize 1"
-        case .diagonalResizeNESW: return "Diagonal Resize 2"
+        case .arrow: return Localized.string("role.arrow")
+        case .text: return Localized.string("role.text")
+        case .link: return Localized.string("role.link")
+        case .location: return Localized.string("role.location")
+        case .precision: return Localized.string("role.precision")
+        case .move: return Localized.string("role.move")
+        case .unavailable: return Localized.string("role.unavailable")
+        case .busy: return Localized.string("role.busy")
+        case .working: return Localized.string("role.working")
+        case .help: return Localized.string("role.help")
+        case .handwriting: return Localized.string("role.handwriting")
+        case .person: return Localized.string("role.person")
+        case .alternate: return Localized.string("role.alternate")
+        case .verticalResize: return Localized.string("role.verticalResize")
+        case .horizontalResize: return Localized.string("role.horizontalResize")
+        case .diagonalResizeNWSE: return Localized.string("role.diagonalResizeNWSE")
+        case .diagonalResizeNESW: return Localized.string("role.diagonalResizeNESW")
         }
     }
 
@@ -161,16 +139,27 @@ struct CursorTheme {
 
 @MainActor
 final class CursorController: ObservableObject {
+    private enum StatusState {
+        case startingUp
+        case chooseCursorFolder
+        case supportedFiles
+        case exportSuccess(String)
+        case exportFailure(String)
+        case loaded(folderName: String, resolvedRoleCount: Int, totalRoleCount: Int)
+        case loadFailure(String)
+    }
+
     @Published private(set) var selectedFolderURL: URL?
     @Published private(set) var selectedFolderIsValid = false
     @Published private(set) var resolvedRoleCount = 0
     @Published private(set) var assignments: [CursorAssignment] = []
-    @Published private(set) var statusText = "초기화 중..."
+    @Published private(set) var statusText = Localized.string("status.startingUp")
 
     private let parser = AniParser()
     private let capeExporter = CapeExporter()
     private let themeResolver = ThemeResolver()
     private var overrideURLs: [CursorRole: URL] = [:]
+    private var statusState: StatusState = .startingUp
 
     func start() {
         clearLegacyDefaults()
@@ -179,7 +168,12 @@ final class CursorController: ObservableObject {
         selectedFolderIsValid = false
         resolvedRoleCount = 0
         overrideURLs = [:]
-        statusText = "커서 폴더를 선택하세요."
+        setStatus(.chooseCursorFolder)
+    }
+
+    func relocalize() {
+        statusText = localizedStatusText(for: statusState)
+        objectWillChange.send()
     }
 
     func chooseThemeFolder() {
@@ -188,7 +182,7 @@ final class CursorController: ObservableObject {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.directoryURL = selectedFolderURL
-        panel.prompt = "폴더 선택"
+        panel.prompt = Localized.string("panel.chooseFolder")
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
         setThemeFolder(url)
@@ -211,12 +205,12 @@ final class CursorController: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [.data]
         panel.directoryURL = overrideURLs[role]?.deletingLastPathComponent() ?? selectedFolderURL
-        panel.prompt = "커서 선택"
+        panel.prompt = Localized.string("panel.chooseCursor")
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let ext = url.pathExtension.lowercased()
         guard ext == "ani" || ext == "cur" else {
-            statusText = "지원하는 파일은 .ani 또는 .cur 입니다."
+            setStatus(.supportedFiles)
             return
         }
         overrideURLs[role] = url
@@ -230,7 +224,7 @@ final class CursorController: ObservableObject {
             panel.allowedContentTypes = [.data]
             panel.nameFieldStringValue = sanitizedCapeFileName()
             panel.canCreateDirectories = true
-            panel.prompt = "내보내기"
+            panel.prompt = Localized.string("panel.export")
 
             guard panel.runModal() == .OK, var url = panel.url else { return }
             if url.pathExtension.lowercased() != "cape" {
@@ -245,9 +239,9 @@ final class CursorController: ObservableObject {
                 theme: resolution.theme,
                 to: url
             )
-            statusText = "Mousecape용 cape 내보내기 완료: \(url.lastPathComponent)"
+            setStatus(.exportSuccess(url.lastPathComponent))
         } catch {
-            statusText = "cape 내보내기 실패: \(error.localizedDescription)"
+            setStatus(.exportFailure(error.localizedDescription))
         }
     }
 
@@ -261,13 +255,13 @@ final class CursorController: ObservableObject {
             )
             resolvedRoleCount = assignments.filter(\.isResolved).count
             selectedFolderIsValid = true
-            let folderName = selectedFolderURL?.lastPathComponent ?? "폴더 없음"
-            statusText = "로드 완료: \(folderName) · \(resolvedRoleCount)/\(CursorRole.allCases.count)개 역할 연결됨"
+            let folderName = selectedFolderURL?.lastPathComponent ?? ""
+            setStatus(.loaded(folderName: folderName, resolvedRoleCount: resolvedRoleCount, totalRoleCount: CursorRole.allCases.count))
         } catch {
             assignments = unresolvedAssignments()
             resolvedRoleCount = 0
             selectedFolderIsValid = false
-            statusText = "불러오기 실패: \(error.localizedDescription)"
+            setStatus(.loadFailure(error.localizedDescription))
         }
     }
 
@@ -277,7 +271,7 @@ final class CursorController: ObservableObject {
 
     private func loadTheme() throws -> (theme: CursorTheme, filesByRole: [CursorRole: URL], fallbackRoles: Set<CursorRole>) {
         guard let baseDirectory = selectedFolderURL else {
-            throw CursorError.missingTheme("테마 폴더가 선택되지 않았습니다.")
+            throw CursorError.missingTheme(Localized.string("error.noThemeFolderSelected"))
         }
 
         var animations: [CursorRole: CursorAnimation] = [:]
@@ -366,6 +360,31 @@ final class CursorController: ObservableObject {
         return cleaned.isEmpty ? "Cape Forge.cape" : "\(cleaned).cape"
     }
 
+    private func setStatus(_ state: StatusState) {
+        statusState = state
+        statusText = localizedStatusText(for: state)
+    }
+
+    private func localizedStatusText(for state: StatusState) -> String {
+        switch state {
+        case .startingUp:
+            return Localized.string("status.startingUp")
+        case .chooseCursorFolder:
+            return Localized.string("status.chooseCursorFolder")
+        case .supportedFiles:
+            return Localized.string("status.supportedFiles")
+        case .exportSuccess(let fileName):
+            return Localized.string("status.exportSuccess", fileName)
+        case .exportFailure(let message):
+            return Localized.string("status.exportFailure", message)
+        case .loaded(let folderName, let resolvedRoleCount, let totalRoleCount):
+            let displayFolder = folderName.isEmpty ? Localized.string("app.noFolderSelected") : folderName
+            return Localized.string("status.loaded", displayFolder, resolvedRoleCount, totalRoleCount)
+        case .loadFailure(let message):
+            return Localized.string("status.loadFailure", message)
+        }
+    }
+
 }
 
 enum CursorError: LocalizedError {
@@ -377,13 +396,13 @@ enum CursorError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingTheme(let path):
-            return "테마 파일이 없습니다: \(path)"
+            return Localized.string("error.themeFileMissing", path)
         case .invalidANI(let message):
-            return "ANI 파싱 실패: \(message)"
+            return Localized.string("error.aniParsingFailed", message)
         case .invalidThemeSelection(let message):
             return message
         case .unsupportedCursorPayload:
-            return "커서 프레임을 이미지로 읽지 못했습니다."
+            return Localized.string("error.unsupportedCursorPayload")
         }
     }
 }

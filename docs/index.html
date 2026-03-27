@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cape Forge Support</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #162033;
+      --muted: #5e6a80;
+      --line: rgba(22, 32, 51, 0.12);
+      --accent: #1b7af3;
+      --accent-strong: #0a4db5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(27, 122, 243, 0.16), transparent 28rem),
+        radial-gradient(circle at bottom right, rgba(10, 77, 181, 0.14), transparent 24rem),
+        var(--bg);
+    }
+
+    .wrap {
+      width: min(880px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 56px 0 80px;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: 0 18px 50px rgba(22, 32, 51, 0.08);
+    }
+
+    h1, h2 {
+      margin: 0 0 12px;
+      line-height: 1.08;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    p, li {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(27, 122, 243, 0.09);
+      color: var(--accent-strong);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 20px;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .button.secondary {
+      background: rgba(22, 32, 51, 0.06);
+      color: var(--text);
+    }
+
+    .lang-switch {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .lang-switch a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(22, 32, 51, 0.05);
+    }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+    }
+
+    footer {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 720px) {
+      .wrap { padding-top: 28px; }
+      .card { padding: 22px; border-radius: 24px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="lang-switch">
+        <a href="./ko/index.html">한국어</a>
+      </div>
+      <div class="eyebrow">Cape Forge Support</div>
+      <h1>Convert ANI and CUR files into Mousecape-compatible CAPE files.</h1>
+      <p>
+        Cape Forge is a macOS utility for turning Windows cursor packs into exported
+        <code>.cape</code> files. The app reads only the folders and files you choose,
+        previews the mapped cursor roles, and exports to a location you select.
+      </p>
+
+      <div class="actions">
+        <a class="button primary" href="./privacy.html">Privacy Policy</a>
+        <a class="button secondary" href="mailto:support@example.com?subject=Cape%20Forge%20Support">Contact Support</a>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>What Cape Forge does</h2>
+          <ul>
+            <li>Reads <code>.ani</code> and <code>.cur</code> files from a folder you choose</li>
+            <li>Maps files to common cursor roles automatically</li>
+            <li>Lets you preview and override individual roles</li>
+            <li>Exports a Mousecape-compatible <code>.cape</code> file</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Need help?</h2>
+          <ul>
+            <li>Make sure your chosen folder contains <code>.ani</code> or <code>.cur</code> files directly inside it</li>
+            <li>If a role looks wrong, use <strong>Change Cursor File…</strong> for that role</li>
+            <li>Use the exported <code>.cape</code> file in Mousecape or another compatible app</li>
+          </ul>
+        </section>
+      </div>
+    </section>
+
+    <footer>
+      Cape Forge support page
+    </footer>
+  </main>
+</body>
+</html>

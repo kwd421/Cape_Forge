@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cape Forge 지원</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #162033;
+      --muted: #5e6a80;
+      --line: rgba(22, 32, 51, 0.12);
+      --accent: #1b7af3;
+      --accent-strong: #0a4db5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(27, 122, 243, 0.16), transparent 28rem),
+        radial-gradient(circle at bottom right, rgba(10, 77, 181, 0.14), transparent 24rem),
+        var(--bg);
+    }
+
+    .wrap {
+      width: min(880px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 56px 0 80px;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: 0 18px 50px rgba(22, 32, 51, 0.08);
+    }
+
+    h1, h2 {
+      margin: 0 0 12px;
+      line-height: 1.08;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    p, li {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(27, 122, 243, 0.09);
+      color: var(--accent-strong);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .lang-switch {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .lang-switch a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(22, 32, 51, 0.05);
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 20px;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .button.secondary {
+      background: rgba(22, 32, 51, 0.06);
+      color: var(--text);
+    }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+    }
+
+    footer {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 720px) {
+      .wrap { padding-top: 28px; }
+      .card { padding: 22px; border-radius: 24px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="lang-switch">
+        <a href="../index.html">English</a>
+      </div>
+      <div class="eyebrow">Cape Forge 지원</div>
+      <h1>Windows 커서팩을 Mousecape 호환 CAPE 파일로 변환하세요.</h1>
+      <p>
+        Cape Forge는 Windows 커서팩을 macOS에서 <code>.cape</code> 파일로 내보내는 유틸리티입니다.
+        앱은 사용자가 직접 선택한 폴더와 파일만 읽고, 역할별 미리보기를 보여준 뒤,
+        사용자가 지정한 위치로 내보냅니다.
+      </p>
+
+      <div class="actions">
+        <a class="button primary" href="./privacy.html">개인정보 처리방침</a>
+        <a class="button secondary" href="mailto:support@example.com?subject=Cape%20Forge%20Support">지원 문의</a>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Cape Forge가 하는 일</h2>
+          <ul>
+            <li>사용자가 선택한 폴더에서 <code>.ani</code>, <code>.cur</code> 파일 읽기</li>
+            <li>커서 역할에 맞게 파일 자동 매핑</li>
+            <li>역할별 미리보기 및 개별 파일 변경</li>
+            <li>Mousecape 호환 <code>.cape</code> 파일 내보내기</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>도움이 필요할 때</h2>
+          <ul>
+            <li>선택한 폴더 바로 아래에 <code>.ani</code> 또는 <code>.cur</code> 파일이 있어야 합니다</li>
+            <li>특정 역할이 맞지 않으면 <strong>커서 파일 변경…</strong>으로 직접 지정할 수 있습니다</li>
+            <li>내보낸 <code>.cape</code> 파일은 Mousecape 같은 호환 앱에서 사용할 수 있습니다</li>
+          </ul>
+        </section>
+      </div>
+    </section>
+
+    <footer>
+      Cape Forge 지원 페이지
+    </footer>
+  </main>
+</body>
+</html>

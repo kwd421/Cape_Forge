@@ -40,7 +40,7 @@ struct CapeExporter {
         }
 
         guard !cursors.isEmpty else {
-            throw CursorError.invalidThemeSelection("내보낼 커서가 없습니다.")
+            throw CursorError.invalidThemeSelection(Localized.string("error.noCursorsToExport"))
         }
 
         let cape: [String: Any] = [

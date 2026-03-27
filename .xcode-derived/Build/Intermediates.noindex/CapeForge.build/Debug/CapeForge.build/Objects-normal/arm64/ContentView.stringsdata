@@ -1,0 +1,16 @@
+{
+  "source": "/Users/seinel/Projects/mac_mouse_cursor/Sources/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cape Forge",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 10
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -10,7 +10,7 @@ struct AniParser {
             let data = try Data(contentsOf: url)
             return try parseCUR(data: data)
         default:
-            throw CursorError.invalidANI("지원하지 않는 확장자입니다: \(url.pathExtension)")
+            throw CursorError.invalidANI(Localized.string("error.unsupportedExtension", url.pathExtension))
         }
     }
 
@@ -21,7 +21,7 @@ struct AniParser {
 
     func parseANI(data: Data) throws -> CursorAnimation {
         guard data.count >= 12, data[0..<4] == Data("RIFF".utf8), data[8..<12] == Data("ACON".utf8) else {
-            throw CursorError.invalidANI("RIFF ACON 헤더가 아닙니다.")
+            throw CursorError.invalidANI(Localized.string("error.invalidRiffAconHeader"))
         }
 
         var jiffies = 6
@@ -34,7 +34,7 @@ struct AniParser {
             let chunkDataStart = offset + 8
             let chunkDataEnd = chunkDataStart + chunkSize
             guard chunkDataEnd <= data.count else {
-                throw CursorError.invalidANI("청크 길이가 잘못되었습니다.")
+                throw CursorError.invalidANI(Localized.string("error.invalidChunkLength"))
             }
 
             if chunkID == "anih", chunkSize >= 36 {
@@ -55,7 +55,7 @@ struct AniParser {
             try decodeFrame(from: chunk, defaultDelay: TimeInterval(max(jiffies, 1)) / 60.0)
         }
         guard let first = frames.first else {
-            throw CursorError.invalidANI("프레임이 없습니다.")
+            throw CursorError.invalidANI(Localized.string("error.noFrames"))
         }
 
         return CursorAnimation(
@@ -83,7 +83,7 @@ struct AniParser {
             let start = offset + 8
             let end = start + chunkSize
             guard end <= data.endIndex else {
-                throw CursorError.invalidANI("icon 청크 길이가 잘못되었습니다.")
+                throw CursorError.invalidANI(Localized.string("error.invalidIconChunkLength"))
             }
             if chunkID == "icon" {
                 chunks.append(data[start..<end])
@@ -96,12 +96,12 @@ struct AniParser {
     private func decodeFrame(from data: Data, defaultDelay: TimeInterval) throws -> (image: NSImage, hotspot: CGPoint, size: CGSize, delay: TimeInterval) {
         let data = Data(data)
         guard data.count >= 22 else {
-            throw CursorError.invalidANI("CUR 데이터가 너무 짧습니다.")
+            throw CursorError.invalidANI(Localized.string("error.curTooShort"))
         }
         let type = readUInt16LE(data, 2)
         let count = readUInt16LE(data, 4)
         guard type == 2, count >= 1 else {
-            throw CursorError.invalidANI("CUR 헤더가 아닙니다.")
+            throw CursorError.invalidANI(Localized.string("error.invalidCurHeader"))
         }
 
         let widthByte = Int(data[6])
@@ -111,7 +111,7 @@ struct AniParser {
         let imageBytes = Int(readUInt32LE(data, 14))
         let imageOffset = Int(readUInt32LE(data, 18))
         guard imageOffset + imageBytes <= data.count else {
-            throw CursorError.invalidANI("CUR 내부 이미지 범위가 잘못되었습니다.")
+            throw CursorError.invalidANI(Localized.string("error.invalidCurEmbeddedRange"))
         }
 
         let imagePayload = Data(data[imageOffset..<(imageOffset + imageBytes)])

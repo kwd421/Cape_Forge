@@ -13,10 +13,7 @@ struct ThemeResolver {
 
         let candidates = try directCursorFiles(in: directory)
         guard !candidates.isEmpty else {
-            throw CursorError.invalidThemeSelection("""
-            이 폴더에는 바로 적용할 커서 파일이 없습니다.
-            .ani 또는 .cur 파일이 직접 들어 있는 폴더를 선택하세요.
-            """)
+            throw CursorError.invalidThemeSelection(Localized.string("error.invalidThemeSelection.noCursorFiles"))
         }
 
         var mapping: [CursorRole: URL] = [:]
