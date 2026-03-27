@@ -26,9 +26,6 @@ struct ContentView: View {
                 Button("설정 열기") {
                     (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
                 }
-                Button("다시 불러오기") {
-                    controller.reload()
-                }
             }
 
             Divider()
@@ -52,31 +49,42 @@ struct SettingsView: View {
     @State private var selection: CursorRole? = .arrow
 
     var body: some View {
-        NavigationSplitView {
-            List(CursorRole.allCases, selection: $selection) { role in
-                if let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
-                    CursorRoleRow(assignment: assignment)
-                        .tag(role)
+        VStack(spacing: 0) {
+            NavigationSplitView {
+                List(CursorRole.allCases, selection: $selection) { role in
+                    if let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
+                        CursorRoleRow(assignment: assignment)
+                            .tag(role)
+                    }
+                }
+                .navigationTitle("커서")
+                .frame(minWidth: 230)
+            } detail: {
+                if let role = selection, let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
+                    CursorRoleDetailView(controller: controller, assignment: assignment)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "cursorarrow")
+                            .font(.system(size: 30))
+                            .foregroundStyle(.secondary)
+                        Text("불러온 커서가 없습니다")
+                            .font(.headline)
+                        Text("커서 폴더를 불러온 뒤 왼쪽 목록에서 역할을 고르면 해당 커서를 표시합니다.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle("커서")
-            .frame(minWidth: 230)
-        } detail: {
-            if let role = selection, let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
-                CursorRoleDetailView(controller: controller, assignment: assignment)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "cursorarrow")
-                        .font(.system(size: 30))
-                        .foregroundStyle(.secondary)
-                    Text("커서를 선택하세요")
-                        .font(.headline)
-                    Text("왼쪽 목록에서 역할을 고르면 상세 설정과 미리보기를 볼 수 있습니다.")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            Divider()
+            HStack {
+                Spacer()
+                Button("Mousecape로 내보내기…") {
+                    controller.exportMousecapeCape()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
         }
         .frame(minWidth: 860, minHeight: 620)
     }
@@ -136,35 +144,25 @@ struct CursorRoleDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsHeader(controller: controller)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(assignment.role.displayName)
-                        .font(.title2)
-                    Text(assignment.role.englishName)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    Text(assignment.role.mousecapeMappingDescription)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text("기본 커서와 현재 적용 중인 커서를 비교하고, 필요하면 이 역할만 별도로 지정할 수 있습니다.")
-                        .foregroundStyle(.secondary)
-                    if let roleHint = assignment.role.roleHint {
-                        Text(roleHint)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                HStack(alignment: .top, spacing: 20) {
-                    PreviewGroup(
-                        title: "현재 시스템 커서",
-                        subtitle: "지금 시스템에 등록된 포인터 미리보기",
-                        animation: assignment.defaultPreview
-                    )
+                if let appliedPreview = assignment.appliedPreview {
                     PreviewGroup(
                         title: "적용 커서",
                         subtitle: assignment.sourceURL?.lastPathComponent ?? "폴더에서 자동 매핑된 파일",
-                        animation: assignment.appliedPreview ?? assignment.defaultPreview
-                    )
+                        animation: appliedPreview
+                    ) {
+                        Button("커서 파일 변경…") {
+                            controller.chooseOverride(for: assignment.role)
+                        }
+                    }
+                } else {
+                    EmptyPreviewGroup(
+                        title: "적용 커서",
+                        subtitle: assignment.sourceURL?.lastPathComponent ?? "불러온 커서가 없습니다"
+                    ) {
+                        Button("커서 파일 변경…") {
+                            controller.chooseOverride(for: assignment.role)
+                        }
+                    }
                 }
 
                 GroupBox {
@@ -173,53 +171,34 @@ struct CursorRoleDetailView: View {
                             Label("자동 매칭되는 전용 커서를 찾지 못해 이 테마의 일반 커서로 대체했습니다.", systemImage: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.orange)
                         }
-                        LabeledContent("역할") {
-                            VStack(alignment: .trailing, spacing: 2) {
+                        DetailItem(title: "역할") {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(assignment.role.displayName)
                                 Text(assignment.role.englishName)
                                     .foregroundStyle(.secondary)
-                                Text(assignment.role.mousecapeMappingDescription)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
                             }
                         }
-                        LabeledContent("자동 파일명") {
-                            Text(assignment.role.themeFileName)
-                                .textSelection(.enabled)
+                        DetailItem(title: "Mousecape") {
+                            Text(assignment.role.mousecapeMappingDescription)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        LabeledContent("현재 소스") {
+                        DetailItem(title: "현재 소스") {
                             Text(assignment.sourceURL?.path ?? "선택한 폴더 안에서 자동 매핑")
                                 .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
                                 .textSelection(.enabled)
                         }
                         if assignment.usesArrowFallback {
-                            LabeledContent("상태") {
+                            DetailItem(title: "상태") {
                                 Text("자동 매핑 실패 (일반 커서 대체)")
                                     .foregroundStyle(.orange)
                             }
                         }
-                        Divider()
-                        HStack {
-                            Button("커서 파일 변경…") {
-                                controller.chooseOverride(for: assignment.role)
-                            }
-                            if assignment.sourceURL != nil {
-                                Button("자동 매핑으로 되돌리기") {
-                                    controller.clearOverride(for: assignment.role)
-                                }
-                            }
-                            Spacer()
-                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } label: {
-                    Text("할당")
+                    EmptyView()
                 }
-
-                Text(controller.statusText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -248,48 +227,42 @@ struct SettingsHeader: View {
                     }
                 }
 
-                HStack(spacing: 12) {
-                    Label(
-                        controller.selectedFolderIsValid
-                            ? "\(controller.resolvedRoleCount)개 역할을 사용할 수 있습니다"
-                            : "선택한 폴더를 확인해야 합니다",
-                        systemImage: controller.selectedFolderIsValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-                    )
-                    .foregroundStyle(controller.selectedFolderIsValid ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.orange))
-
-                    if controller.selectedFolderIsValid {
-                        Text("자동 매핑 후 필요한 역할만 개별적으로 재지정할 수 있습니다.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .font(.footnote)
-
-                HStack(spacing: 18) {
-                    Spacer()
-                    Button("Mousecape로 내보내기…") {
-                        controller.exportMousecapeCape()
-                    }
-                    Button("다시 불러오기") {
-                        controller.reload()
-                    }
-                }
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
 
-struct PreviewGroup: View {
+struct PreviewGroup<TrailingAction: View>: View {
     let title: String
     let subtitle: String
     let animation: CursorAnimation
+    let trailingAction: TrailingAction
+
+    init(
+        title: String,
+        subtitle: String,
+        animation: CursorAnimation,
+        @ViewBuilder trailingAction: () -> TrailingAction = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.animation = animation
+        self.trailingAction = trailingAction()
+    }
 
     var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(subtitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    trailingAction
+                }
 
                 CursorPreviewView(animation: animation)
                     .frame(maxWidth: .infinity)
@@ -297,8 +270,75 @@ struct PreviewGroup: View {
                     .background(Color(nsColor: .controlBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
         } label: {
+            EmptyView()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct DetailItem<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
+                .font(.title3.weight(.semibold))
+            content
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 8)
+    }
+}
+
+struct EmptyPreviewGroup<TrailingAction: View>: View {
+    let title: String
+    let subtitle: String
+    let trailingAction: TrailingAction
+
+    init(
+        title: String,
+        subtitle: String,
+        @ViewBuilder trailingAction: () -> TrailingAction = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.trailingAction = trailingAction()
+    }
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(subtitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    trailingAction
+                }
+
+                VStack(spacing: 10) {
+                    Image(systemName: "cursorarrow")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.tertiary)
+                    Text("커서를 불러오면 여기에 표시됩니다.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(height: 220)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+        } label: {
+            EmptyView()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

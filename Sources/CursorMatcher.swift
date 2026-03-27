@@ -53,7 +53,7 @@ final class CursorMatcher {
     private let coreCursorCopyImages: CoreCursorCopyImagesFn?
     private static let roleIdentifiers: [CursorRole: [String]] = [
         .arrow: ["com.apple.coregraphics.Arrow", "com.apple.cursor.0"],
-        .text: ["com.apple.coregraphics.IBeam"],
+        .text: ["com.apple.coregraphics.IBeam", "com.apple.coregraphics.IBeamXOR"],
         .link: ["com.apple.cursor.2", "com.apple.cursor.13"],
         .location: ["com.apple.coregraphics.Copy", "com.apple.cursor.5"],
         .precision: ["com.apple.cursor.7", "com.apple.cursor.8"],
@@ -62,13 +62,13 @@ final class CursorMatcher {
         .busy: ["com.apple.cursor.4"],
         .working: ["com.apple.coregraphics.Wait"],
         .help: ["com.apple.cursor.40"],
-        .handwriting: ["com.apple.coregraphics.IBeamXOR", "com.apple.cursor.20"],
+        .handwriting: ["com.apple.cursor.20"],
         .person: ["com.apple.cursor.41"],
         .alternate: ["com.apple.coregraphics.Alias"],
-        .verticalResize: ["com.apple.cursor.23", "com.apple.cursor.32"],
-        .horizontalResize: ["com.apple.cursor.19", "com.apple.cursor.28"],
-        .diagonalResizeNWSE: ["com.apple.cursor.34"],
-        .diagonalResizeNESW: ["com.apple.cursor.30"]
+        .verticalResize: ["com.apple.cursor.21", "com.apple.cursor.22", "com.apple.cursor.23", "com.apple.cursor.31", "com.apple.cursor.32", "com.apple.cursor.36"],
+        .horizontalResize: ["com.apple.cursor.17", "com.apple.cursor.18", "com.apple.cursor.19", "com.apple.cursor.27", "com.apple.cursor.28", "com.apple.cursor.38"],
+        .diagonalResizeNWSE: ["com.apple.cursor.33", "com.apple.cursor.34", "com.apple.cursor.35"],
+        .diagonalResizeNESW: ["com.apple.cursor.29", "com.apple.cursor.30", "com.apple.cursor.37"]
     ]
 
     init() {
@@ -85,93 +85,6 @@ final class CursorMatcher {
         var previews: [CursorRole: CursorAnimation] = [:]
         var cursors: [(NSCursor, CursorRole)] = []
 
-        func localWithCString<Result>(_ identifier: String, _ body: (UnsafeMutablePointer<CChar>) -> Result) -> Result {
-            let values = identifier.utf8CString
-            let pointer = UnsafeMutablePointer<CChar>.allocate(capacity: values.count)
-            values.withUnsafeBufferPointer { buffer in
-                pointer.initialize(from: buffer.baseAddress!, count: values.count)
-            }
-            defer { pointer.deallocate() }
-            return body(pointer)
-        }
-
-        func localSystemAnimation(for role: CursorRole) -> CursorAnimation? {
-            guard let identifiers = Self.roleIdentifiers[role] else { return nil }
-
-            for identifier in identifiers {
-                if identifier.hasPrefix("com.apple.cursor."),
-                   let loadedCoreCursorCopyImages,
-                   let loadedMainConnectionID,
-                   let cursorID = Int32(identifier.split(separator: ".").last ?? "") {
-                    var size = CGSize.zero
-                    var hotspot = CGPoint.zero
-                    var frameCount: UInt = 0
-                    var frameDuration: CGFloat = 0
-                    var imagesRef: Unmanaged<CFArray>?
-                    let result = loadedCoreCursorCopyImages(
-                        loadedMainConnectionID(),
-                        cursorID,
-                        &imagesRef,
-                        &size,
-                        &hotspot,
-                        &frameCount,
-                        &frameDuration
-                    )
-                    if result == 0, let imagesRef {
-                        let images = imagesRef.takeRetainedValue() as NSArray
-                        let frames = Self.decodeSystemFrames(
-                            from: images,
-                            expectedFrameCount: Int(frameCount),
-                            frameDuration: max(Double(frameDuration), 0.01),
-                            canvasSize: size
-                        )
-                        if !frames.isEmpty {
-                            return CursorAnimation(
-                                frames: frames,
-                                hotspot: hotspot,
-                                canvasSize: size == .zero ? CGSize(width: 32, height: 32) : size
-                            )
-                        }
-                    }
-                } else if let loadedCopyRegisteredCursorImages, let loadedMainConnectionID {
-                    var size = CGSize.zero
-                    var hotspot = CGPoint.zero
-                    var frameCount: UInt = 0
-                    var frameDuration: CGFloat = 0
-                    var imagesRef: Unmanaged<CFArray>?
-                    let result = localWithCString(identifier) { symbol in
-                        loadedCopyRegisteredCursorImages(
-                            loadedMainConnectionID(),
-                            symbol,
-                            &size,
-                            &hotspot,
-                            &frameCount,
-                            &frameDuration,
-                            &imagesRef
-                        )
-                    }
-                    if result == 0, let imagesRef {
-                        let images = imagesRef.takeRetainedValue() as NSArray
-                        let frames = Self.decodeSystemFrames(
-                            from: images,
-                            expectedFrameCount: Int(frameCount),
-                            frameDuration: max(Double(frameDuration), 0.01),
-                            canvasSize: size
-                        )
-                        if !frames.isEmpty {
-                            return CursorAnimation(
-                                frames: frames,
-                                hotspot: hotspot,
-                                canvasSize: size == .zero ? CGSize(width: 32, height: 32) : size
-                            )
-                        }
-                    }
-                }
-            }
-
-            return nil
-        }
-
         func register(_ cursor: NSCursor, as role: CursorRole) {
             let fingerprint = Self.fingerprint(for: cursor)
             if let existing = mapping[fingerprint], existing != role {
@@ -180,7 +93,12 @@ final class CursorMatcher {
             } else if !ambiguousFingerprints.contains(fingerprint) {
                 mapping[fingerprint] = role
             }
-            previews[role] = localSystemAnimation(for: role) ?? Self.animation(for: cursor)
+            previews[role] = Self.systemAnimation(
+                for: role,
+                mainConnectionID: loadedMainConnectionID,
+                copyRegisteredCursorImages: loadedCopyRegisteredCursorImages,
+                coreCursorCopyImages: loadedCoreCursorCopyImages
+            ) ?? Self.animation(for: cursor)
             cursors.append((cursor, role))
         }
 
@@ -195,7 +113,12 @@ final class CursorMatcher {
         register(.resizeUpDown, as: .verticalResize)
 
         for role in CursorRole.allCases where previews[role] == nil {
-            previews[role] = localSystemAnimation(for: role) ?? previews[.arrow]
+            previews[role] = Self.systemAnimation(
+                for: role,
+                mainConnectionID: loadedMainConnectionID,
+                copyRegisteredCursorImages: loadedCopyRegisteredCursorImages,
+                coreCursorCopyImages: loadedCoreCursorCopyImages
+            ) ?? previews[.arrow]
         }
 
         standardCursors = cursors
@@ -212,7 +135,7 @@ final class CursorMatcher {
     }
 
     func defaultPreview(for role: CursorRole) -> CursorAnimation {
-        defaultAnimations[role] ?? defaultAnimations[.arrow]!
+        currentSystemAnimation(for: role) ?? defaultAnimations[role] ?? defaultAnimations[.arrow]!
     }
 
     func runSelfTest() -> [CursorMatcherSelfTestResult] {
@@ -250,6 +173,108 @@ final class CursorMatcher {
             fingerprintPrefix: fingerprintPrefix,
             timestamp: Date()
         )
+    }
+
+    private func currentSystemAnimation(for role: CursorRole) -> CursorAnimation? {
+        Self.systemAnimation(
+            for: role,
+            mainConnectionID: mainConnectionID,
+            copyRegisteredCursorImages: copyRegisteredCursorImages,
+            coreCursorCopyImages: coreCursorCopyImages
+        )
+    }
+
+    private static func systemAnimation(
+        for role: CursorRole,
+        mainConnectionID: CGSMainConnectionIDFn?,
+        copyRegisteredCursorImages: CGSCopyRegisteredCursorImagesFn?,
+        coreCursorCopyImages: CoreCursorCopyImagesFn?
+    ) -> CursorAnimation? {
+        guard let identifiers = Self.roleIdentifiers[role] else { return nil }
+
+        for identifier in identifiers {
+            if identifier.hasPrefix("com.apple.cursor."),
+               let loadedCoreCursorCopyImages = coreCursorCopyImages,
+               let loadedMainConnectionID = mainConnectionID,
+               let cursorID = Int32(identifier.split(separator: ".").last ?? "") {
+                var size = CGSize.zero
+                var hotspot = CGPoint.zero
+                var frameCount: UInt = 0
+                var frameDuration: CGFloat = 0
+                var imagesRef: Unmanaged<CFArray>?
+                let result = loadedCoreCursorCopyImages(
+                    loadedMainConnectionID(),
+                    cursorID,
+                    &imagesRef,
+                    &size,
+                    &hotspot,
+                    &frameCount,
+                    &frameDuration
+                )
+                if result == 0, let imagesRef {
+                    let images = imagesRef.takeRetainedValue() as NSArray
+                    let frames = Self.decodeSystemFrames(
+                        from: images,
+                        expectedFrameCount: Int(frameCount),
+                        frameDuration: max(Double(frameDuration), 0.01),
+                        canvasSize: size
+                    )
+                    if !frames.isEmpty {
+                        return CursorAnimation(
+                            frames: frames,
+                            hotspot: hotspot,
+                            canvasSize: size == .zero ? CGSize(width: 32, height: 32) : size
+                        )
+                    }
+                }
+            } else if let loadedCopyRegisteredCursorImages = copyRegisteredCursorImages,
+                      let loadedMainConnectionID = mainConnectionID {
+                var size = CGSize.zero
+                var hotspot = CGPoint.zero
+                var frameCount: UInt = 0
+                var frameDuration: CGFloat = 0
+                var imagesRef: Unmanaged<CFArray>?
+                let result = withCString(identifier) { symbol in
+                    loadedCopyRegisteredCursorImages(
+                        loadedMainConnectionID(),
+                        symbol,
+                        &size,
+                        &hotspot,
+                        &frameCount,
+                        &frameDuration,
+                        &imagesRef
+                    )
+                }
+                if result == 0, let imagesRef {
+                    let images = imagesRef.takeRetainedValue() as NSArray
+                    let frames = Self.decodeSystemFrames(
+                        from: images,
+                        expectedFrameCount: Int(frameCount),
+                        frameDuration: max(Double(frameDuration), 0.01),
+                        canvasSize: size
+                    )
+                    if !frames.isEmpty {
+                        return CursorAnimation(
+                            frames: frames,
+                            hotspot: hotspot,
+                            canvasSize: size == .zero ? CGSize(width: 32, height: 32) : size
+                        )
+                    }
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private static func withCString<Result>(_ identifier: String, _ body: (UnsafeMutablePointer<CChar>) -> Result) -> Result {
+        let values = identifier.utf8CString
+        let pointer = UnsafeMutablePointer<CChar>.allocate(capacity: values.count)
+        values.withUnsafeBufferPointer { buffer in
+            pointer.initialize(from: buffer.baseAddress!, count: values.count)
+        }
+        defer { pointer.deallocate() }
+        return body(pointer)
     }
 
     private static func fingerprint(for cursor: NSCursor) -> Data {

@@ -52,7 +52,7 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .working: return "대기"
         case .help: return "도움말"
         case .handwriting: return "손글씨"
-        case .person: return "사람 선택"
+        case .person: return "셀 선택"
         case .alternate: return "바로가기"
         case .verticalResize: return "수직 크기 조절"
         case .horizontalResize: return "수평 크기 조절"
@@ -74,7 +74,7 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .working: return "Wait"
         case .help: return "Help"
         case .handwriting: return "Handwriting"
-        case .person: return "Person"
+        case .person: return "Cell"
         case .alternate: return "Alias"
         case .verticalResize: return "Vertical Resize"
         case .horizontalResize: return "Horizontal Resize"
@@ -108,55 +108,44 @@ enum CursorRole: String, CaseIterable, Identifiable {
     var mousecapeMappingDescription: String {
         switch self {
         case .arrow:
-            return "Mousecape: Arrow"
+            return "Arrow"
         case .text:
-            return "Mousecape: IBeam, IBeamXOR"
+            return "IBeam, IBeamXOR"
         case .link:
-            return "Mousecape: Link, Pointing"
+            return "Link, Pointing"
         case .location:
-            return "Mousecape: Copy, Copy Drag"
+            return "Copy, Copy Drag"
         case .precision:
-            return "Mousecape: Crosshair, Crosshair 2"
+            return "Crosshair, Crosshair 2"
         case .move:
-            return "Mousecape: Move, Closed, Open"
+            return "Move, Closed, Open"
         case .unavailable:
-            return "Mousecape: Forbidden"
+            return "Forbidden"
         case .busy:
-            return "Mousecape: Busy"
+            return "Busy"
         case .working:
-            return "Mousecape: Wait"
+            return "Wait"
         case .help:
-            return "Mousecape: Help"
+            return "Help"
         case .handwriting:
-            return "Mousecape: Cell XOR"
+            return "Cell XOR"
         case .person:
-            return "Mousecape: Cell"
+            return "Cell"
         case .alternate:
-            return "Mousecape: Alias"
+            return "Alias"
         case .verticalResize:
-            return "Mousecape: Resize N-S, Window N-S"
+            return "Resize N, Resize S, Resize N-S, Window N, Window S, Window N-S"
         case .horizontalResize:
-            return "Mousecape: Resize W-E, Window E-W"
+            return "Resize W, Resize E, Resize W-E, Window W, Window E, Window E-W"
         case .diagonalResizeNWSE:
-            return "Mousecape: Window NW-SE"
+            return "Window NW, Window NW-SE, Window SE"
         case .diagonalResizeNESW:
-            return "Mousecape: Window NE-SW"
+            return "Window NE, Window NE-SW, Window SW"
         }
     }
 
     var roleHint: String? {
-        switch self {
-        case .location:
-            return "복사나 드래그 위치 표시 계열 커서입니다."
-        case .working:
-            return "Mousecape에서는 Wait 커서로 적용됩니다."
-        case .handwriting:
-            return "Windows 테마에서는 Handwriting 이름이 흔하지만, Mousecape에서는 Cell XOR에 대응합니다."
-        case .person:
-            return "Windows 테마에서는 Person 이름이 흔하지만, Mousecape에서는 Cell에 대응합니다."
-        default:
-            return nil
-        }
+        nil
     }
 }
 
@@ -198,11 +187,11 @@ final class CursorController: ObservableObject {
     func start() {
         clearLegacyDefaults()
         assignments = unresolvedAssignments()
-        if let folderPath = defaults.string(forKey: Keys.folderPath) {
-            selectedFolderURL = URL(fileURLWithPath: folderPath, isDirectory: true)
-        }
-        overrideURLs = loadOverrides()
-        reload()
+        selectedFolderURL = nil
+        selectedFolderIsValid = false
+        resolvedRoleCount = 0
+        overrideURLs = [:]
+        statusText = "커서 폴더를 선택하세요."
     }
 
     func stop() {}

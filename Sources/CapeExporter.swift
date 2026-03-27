@@ -4,7 +4,7 @@ import Foundation
 struct CapeExporter {
     private let roleIdentifiers: [CursorRole: [String]] = [
         .arrow: ["com.apple.coregraphics.Arrow", "com.apple.cursor.0"],
-        .text: ["com.apple.coregraphics.IBeam"],
+        .text: ["com.apple.coregraphics.IBeam", "com.apple.coregraphics.IBeamXOR"],
         .link: ["com.apple.cursor.2", "com.apple.cursor.13"],
         .location: ["com.apple.coregraphics.Copy", "com.apple.cursor.5"],
         .precision: ["com.apple.cursor.7", "com.apple.cursor.8"],
@@ -13,13 +13,13 @@ struct CapeExporter {
         .busy: ["com.apple.cursor.4"],
         .working: ["com.apple.coregraphics.Wait"],
         .help: ["com.apple.cursor.40"],
-        .handwriting: ["com.apple.coregraphics.IBeamXOR", "com.apple.cursor.20"],
+        .handwriting: ["com.apple.cursor.20"],
         .person: ["com.apple.cursor.41"],
         .alternate: ["com.apple.coregraphics.Alias"],
-        .verticalResize: ["com.apple.cursor.23", "com.apple.cursor.32"],
-        .horizontalResize: ["com.apple.cursor.19", "com.apple.cursor.28"],
-        .diagonalResizeNWSE: ["com.apple.cursor.34"],
-        .diagonalResizeNESW: ["com.apple.cursor.30"]
+        .verticalResize: ["com.apple.cursor.21", "com.apple.cursor.22", "com.apple.cursor.23", "com.apple.cursor.31", "com.apple.cursor.32", "com.apple.cursor.36"],
+        .horizontalResize: ["com.apple.cursor.17", "com.apple.cursor.18", "com.apple.cursor.19", "com.apple.cursor.27", "com.apple.cursor.28", "com.apple.cursor.38"],
+        .diagonalResizeNWSE: ["com.apple.cursor.33", "com.apple.cursor.34", "com.apple.cursor.35"],
+        .diagonalResizeNESW: ["com.apple.cursor.29", "com.apple.cursor.30", "com.apple.cursor.37"]
     ]
 
     func exportCape(

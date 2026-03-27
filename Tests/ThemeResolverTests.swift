@@ -314,9 +314,12 @@ struct CapeExporterTests {
         let cursors = plist?["Cursors"] as? [String: Any]
         let arrow = cursors?["com.apple.coregraphics.Arrow"] as? [String: Any]
         let legacyArrow = cursors?["com.apple.cursor.0"] as? [String: Any]
+        let iBeam = cursors?["com.apple.coregraphics.IBeam"] as? [String: Any]
+        let iBeamXOR = cursors?["com.apple.coregraphics.IBeamXOR"] as? [String: Any]
         let copy = cursors?["com.apple.coregraphics.Copy"] as? [String: Any]
         let wait = cursors?["com.apple.coregraphics.Wait"] as? [String: Any]
         let help = cursors?["com.apple.cursor.40"] as? [String: Any]
+        let cellXOR = cursors?["com.apple.cursor.20"] as? [String: Any]
         let cell = cursors?["com.apple.cursor.41"] as? [String: Any]
         let alias = cursors?["com.apple.coregraphics.Alias"] as? [String: Any]
 
@@ -324,11 +327,75 @@ struct CapeExporterTests {
         #expect(plist?["Identifier"] as? String == "local.test.cape")
         #expect(arrow?["FrameCount"] as? Int == 1)
         #expect(legacyArrow?["FrameCount"] as? Int == 1)
+        #expect(iBeam == nil)
+        #expect(iBeamXOR == nil)
         #expect(copy?["FrameCount"] as? Int == 1)
         #expect(wait?["FrameCount"] as? Int == 1)
         #expect(help?["FrameCount"] as? Int == 1)
+        #expect(cellXOR?["FrameCount"] as? Int == 1)
         #expect(cell?["FrameCount"] as? Int == 1)
         #expect(alias?["FrameCount"] as? Int == 1)
         #expect((arrow?["Representations"] as? [Data])?.isEmpty == false)
+    }
+
+    @MainActor
+    @Test
+    func exportsTextAndResizeRolesToExpandedMousecapeIdentifiers() throws {
+        let image = NSImage(size: NSSize(width: 16, height: 16))
+        image.lockFocus()
+        NSColor.white.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 16, height: 16)).fill()
+        image.unlockFocus()
+
+        let animation = CursorAnimation(
+            frames: [CursorFrame(image: image, delay: 0.2)],
+            hotspot: CGPoint(x: 1, y: 1),
+            canvasSize: CGSize(width: 16, height: 16)
+        )
+        let theme = CursorTheme(animations: [
+            .text: animation,
+            .verticalResize: animation,
+            .horizontalResize: animation,
+            .diagonalResizeNWSE: animation,
+            .diagonalResizeNESW: animation
+        ])
+
+        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("cape")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        try CapeExporter().exportCape(
+            name: "Test Cape",
+            author: "Tester",
+            identifier: "local.test.cape",
+            theme: theme,
+            to: tempURL
+        )
+
+        let data = try Data(contentsOf: tempURL)
+        let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
+
+        #expect(cursors["com.apple.coregraphics.IBeam"] != nil)
+        #expect(cursors["com.apple.coregraphics.IBeamXOR"] != nil)
+        #expect(cursors["com.apple.cursor.21"] != nil)
+        #expect(cursors["com.apple.cursor.22"] != nil)
+        #expect(cursors["com.apple.cursor.23"] != nil)
+        #expect(cursors["com.apple.cursor.31"] != nil)
+        #expect(cursors["com.apple.cursor.32"] != nil)
+        #expect(cursors["com.apple.cursor.36"] != nil)
+        #expect(cursors["com.apple.cursor.17"] != nil)
+        #expect(cursors["com.apple.cursor.18"] != nil)
+        #expect(cursors["com.apple.cursor.19"] != nil)
+        #expect(cursors["com.apple.cursor.27"] != nil)
+        #expect(cursors["com.apple.cursor.28"] != nil)
+        #expect(cursors["com.apple.cursor.38"] != nil)
+        #expect(cursors["com.apple.cursor.33"] != nil)
+        #expect(cursors["com.apple.cursor.34"] != nil)
+        #expect(cursors["com.apple.cursor.35"] != nil)
+        #expect(cursors["com.apple.cursor.29"] != nil)
+        #expect(cursors["com.apple.cursor.30"] != nil)
+        #expect(cursors["com.apple.cursor.37"] != nil)
     }
 }
