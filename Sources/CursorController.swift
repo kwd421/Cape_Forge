@@ -1,6 +1,12 @@
 import AppKit
 import Foundation
 
+struct AutoApplyResult {
+    let capeURL: URL
+    let appliedIdentifier: String
+    let themeName: String
+}
+
 struct CursorFrame {
     let image: NSImage
     let delay: TimeInterval
@@ -38,12 +44,12 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .arrow: return "일반 선택"
         case .text: return "텍스트 선택"
         case .link: return "링크 선택"
-        case .location: return "위치 선택"
+        case .location: return "드래그"
         case .precision: return "정밀도 선택"
         case .move: return "이동"
         case .unavailable: return "사용 불가"
         case .busy: return "사용 중"
-        case .working: return "백그라운드 작업"
+        case .working: return "대기"
         case .help: return "도움말"
         case .handwriting: return "손글씨"
         case .person: return "사람 선택"
@@ -60,12 +66,12 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .arrow: return "Arrow"
         case .text: return "Text"
         case .link: return "Link"
-        case .location: return "Location"
+        case .location: return "Drag"
         case .precision: return "Precision"
         case .move: return "Move"
         case .unavailable: return "Unavailable"
         case .busy: return "Busy"
-        case .working: return "Working"
+        case .working: return "Wait"
         case .help: return "Help"
         case .handwriting: return "Handwriting"
         case .person: return "Person"
@@ -96,6 +102,60 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .horizontalResize: return "독케익_수평 크기 조절.ani"
         case .diagonalResizeNWSE: return "독케익_대각선 방향 크기 조절 1.ani"
         case .diagonalResizeNESW: return "독케익_대각선 방향 크기 조절 2.ani"
+        }
+    }
+
+    var mousecapeMappingDescription: String {
+        switch self {
+        case .arrow:
+            return "Mousecape: Arrow"
+        case .text:
+            return "Mousecape: IBeam, IBeamXOR"
+        case .link:
+            return "Mousecape: Link, Pointing"
+        case .location:
+            return "Mousecape: Copy, Copy Drag"
+        case .precision:
+            return "Mousecape: Crosshair, Crosshair 2"
+        case .move:
+            return "Mousecape: Move, Closed, Open"
+        case .unavailable:
+            return "Mousecape: Forbidden"
+        case .busy:
+            return "Mousecape: Busy"
+        case .working:
+            return "Mousecape: Wait"
+        case .help:
+            return "Mousecape: Help"
+        case .handwriting:
+            return "Mousecape: Cell XOR"
+        case .person:
+            return "Mousecape: Cell"
+        case .alternate:
+            return "Mousecape: Alias"
+        case .verticalResize:
+            return "Mousecape: Resize N-S, Window N-S"
+        case .horizontalResize:
+            return "Mousecape: Resize W-E, Window E-W"
+        case .diagonalResizeNWSE:
+            return "Mousecape: Window NW-SE"
+        case .diagonalResizeNESW:
+            return "Mousecape: Window NE-SW"
+        }
+    }
+
+    var roleHint: String? {
+        switch self {
+        case .location:
+            return "복사나 드래그 위치 표시 계열 커서입니다."
+        case .working:
+            return "Mousecape에서는 Wait 커서로 적용됩니다."
+        case .handwriting:
+            return "Windows 테마에서는 Handwriting 이름이 흔하지만, Mousecape에서는 Cell XOR에 대응합니다."
+        case .person:
+            return "Windows 테마에서는 Person 이름이 흔하지만, Mousecape에서는 Cell에 대응합니다."
+        default:
+            return nil
         }
     }
 }
@@ -225,6 +285,37 @@ final class CursorController: ObservableObject {
         }
     }
 
+    @discardableResult
+    func autoApplyThemeFolder(_ url: URL) throws -> AutoApplyResult {
+        setThemeFolder(url)
+        let resolution = try loadTheme()
+
+        let themeName = capeDisplayName()
+        let identifier = stableCapeIdentifier(for: url)
+        let capeURL = try mousecapeCapeURL(for: identifier)
+
+        try capeExporter.exportCape(
+            name: themeName,
+            author: NSFullUserName().isEmpty ? NSUserName() : NSFullUserName(),
+            identifier: identifier,
+            theme: resolution.theme,
+            to: capeURL
+        )
+
+        let mousecloakURL = try ensureMousecloakBinary()
+        try runProcess(
+            executableURL: mousecloakURL,
+            arguments: ["--suppressCopyright", "--apply", capeURL.path]
+        )
+
+        let message = "자동 적용 완료: \(themeName)"
+        statusText = message
+        print(message)
+        print("cape: \(capeURL.path)")
+
+        return AutoApplyResult(capeURL: capeURL, appliedIdentifier: identifier, themeName: themeName)
+    }
+
     func reload() {
         do {
             let resolution = try loadTheme()
@@ -338,6 +429,132 @@ final class CursorController: ObservableObject {
             "selectedBorder",
             "selectedStyle"
         ].forEach { defaults.removeObject(forKey: $0) }
+    }
+
+    private func mousecapeCapeURL(for identifier: String) throws -> URL {
+        let appSupport = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+        let capesDirectory = appSupport.appendingPathComponent("Mousecape/capes", isDirectory: true)
+        try FileManager.default.createDirectory(at: capesDirectory, withIntermediateDirectories: true)
+        return capesDirectory.appendingPathComponent(identifier).appendingPathExtension("cape")
+    }
+
+    private func stableCapeIdentifier(for url: URL) -> String {
+        let slug = sanitizedIdentifierComponent(from: url.deletingPathExtension().lastPathComponent)
+        let digest = fnv1a64Hex(url.standardizedFileURL.path)
+        return "local.macmousecursor.\(slug).\(digest)"
+    }
+
+    private func sanitizedIdentifierComponent(from value: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-"))
+        let reduced = value.precomposedStringWithCanonicalMapping.lowercased().map { character -> Character in
+            let scalar = String(character).unicodeScalars.first!
+            return allowed.contains(scalar) ? character : "-"
+        }
+        let normalized = String(reduced)
+            .split(separator: "-")
+            .joined(separator: "-")
+        return normalized.isEmpty ? "theme" : normalized
+    }
+
+    private func fnv1a64Hex(_ string: String) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in string.utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 0x100000001b3
+        }
+        return String(hash, radix: 16)
+    }
+
+    private func ensureMousecloakBinary() throws -> URL {
+        let derivedData = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("mac_mouse_cursor_upstream", isDirectory: true)
+        let binaryURL = derivedData.appendingPathComponent("Build/Products/Debug/mousecloak")
+
+        if FileManager.default.isExecutableFile(atPath: binaryURL.path) {
+            return binaryURL
+        }
+
+        guard let projectRoot = projectRootURL() else {
+            throw CursorError.privateCursorHelperFailed("mousecloak 소스 경로를 찾지 못했습니다.")
+        }
+
+        let projectURL = projectRoot
+            .appendingPathComponent("upstream/Mousecape/Mousecape/Mousecape.xcodeproj")
+        guard FileManager.default.fileExists(atPath: projectURL.path) else {
+            throw CursorError.privateCursorHelperFailed("upstream Mousecape 프로젝트를 찾지 못했습니다.")
+        }
+
+        try runProcess(
+            executableURL: URL(fileURLWithPath: "/usr/bin/xcodebuild"),
+            arguments: [
+                "-project", projectURL.path,
+                "-scheme", "mousecloak",
+                "-configuration", "Debug",
+                "-derivedDataPath", derivedData.path,
+                "build",
+                "CODE_SIGNING_ALLOWED=NO",
+                "CODE_SIGNING_REQUIRED=NO",
+                "CODE_SIGN_IDENTITY=",
+                "DEVELOPMENT_TEAM="
+            ]
+        )
+
+        guard FileManager.default.isExecutableFile(atPath: binaryURL.path) else {
+            throw CursorError.privateCursorHelperFailed("mousecloak 빌드는 끝났지만 실행 파일이 없습니다.")
+        }
+
+        return binaryURL
+    }
+
+    private func projectRootURL() -> URL? {
+        if let envPath = ProcessInfo.processInfo.environment["MAC_MOUSE_CURSOR_PROJECT_DIR"] {
+            let url = URL(fileURLWithPath: envPath, isDirectory: true)
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+
+        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+        if FileManager.default.fileExists(atPath: cwd.appendingPathComponent("upstream/Mousecape/Mousecape/Mousecape.xcodeproj").path) {
+            return cwd
+        }
+
+        if let executablePath = Bundle.main.executableURL?.path {
+            var candidate = URL(fileURLWithPath: executablePath)
+            for _ in 0..<5 {
+                candidate.deleteLastPathComponent()
+                if FileManager.default.fileExists(atPath: candidate.appendingPathComponent("upstream/Mousecape/Mousecape/Mousecape.xcodeproj").path) {
+                    return candidate
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func runProcess(executableURL: URL, arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = executableURL
+        process.arguments = arguments
+
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = outputPipe
+
+        try process.run()
+        process.waitUntilExit()
+
+        let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        if !text.isEmpty {
+            print(text)
+        }
+
+        guard process.terminationStatus == 0 else {
+            throw CursorError.privateCursorHelperFailed(text.isEmpty ? "\(executableURL.lastPathComponent) exited with status \(process.terminationStatus)" : text)
+        }
     }
 
     private func capeDisplayName() -> String {

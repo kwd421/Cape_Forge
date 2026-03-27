@@ -52,6 +52,16 @@ struct ThemeResolver {
             mapping[.arrow] = fallback
         }
 
+        if mapping[.busy] == nil, let working = mapping[.working] {
+            mapping[.busy] = working
+            fallbackRoles.insert(.busy)
+        }
+
+        if mapping[.working] == nil, let busy = mapping[.busy] {
+            mapping[.working] = busy
+            fallbackRoles.insert(.working)
+        }
+
         if let arrow = mapping[.arrow] {
             for role in CursorRole.allCases where mapping[role] == nil {
                 mapping[role] = arrow

@@ -163,6 +163,50 @@ struct ThemeResolverTests {
     }
 
     @Test
+    func fallsBackBusyToWorkingWhenBusyIsMissing() throws {
+        let tempDirectory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let folder = tempDirectory.appendingPathComponent("BusyFallback", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let files = [
+            "Normal.ani",
+            "Working.ani"
+        ]
+
+        for file in files {
+            FileManager.default.createFile(atPath: folder.appendingPathComponent(file).path, contents: Data("x".utf8))
+        }
+
+        let resolved = try ThemeResolver().resolveTheme(in: folder)
+        #expect(resolved.filesByRole[.working]?.lastPathComponent == "Working.ani")
+        #expect(resolved.filesByRole[.busy]?.lastPathComponent == "Working.ani")
+    }
+
+    @Test
+    func fallsBackWorkingToBusyWhenWorkingIsMissing() throws {
+        let tempDirectory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let folder = tempDirectory.appendingPathComponent("WorkingFallback", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let files = [
+            "Normal.ani",
+            "Busy.ani"
+        ]
+
+        for file in files {
+            FileManager.default.createFile(atPath: folder.appendingPathComponent(file).path, contents: Data("x".utf8))
+        }
+
+        let resolved = try ThemeResolver().resolveTheme(in: folder)
+        #expect(resolved.filesByRole[.busy]?.lastPathComponent == "Busy.ani")
+        #expect(resolved.filesByRole[.working]?.lastPathComponent == "Busy.ani")
+    }
+
+    @Test
     func fallsBackToArrowWhenNoExactArrowMatchExists() throws {
         let tempDirectory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: tempDirectory) }

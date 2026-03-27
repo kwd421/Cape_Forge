@@ -142,8 +142,16 @@ struct CursorRoleDetailView: View {
                     Text(assignment.role.englishName)
                         .font(.headline)
                         .foregroundStyle(.secondary)
+                    Text(assignment.role.mousecapeMappingDescription)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     Text("기본 커서와 현재 적용 중인 커서를 비교하고, 필요하면 이 역할만 별도로 지정할 수 있습니다.")
                         .foregroundStyle(.secondary)
+                    if let roleHint = assignment.role.roleHint {
+                        Text(roleHint)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 HStack(alignment: .top, spacing: 20) {
@@ -169,6 +177,9 @@ struct CursorRoleDetailView: View {
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text(assignment.role.displayName)
                                 Text(assignment.role.englishName)
+                                    .foregroundStyle(.secondary)
+                                Text(assignment.role.mousecapeMappingDescription)
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }

@@ -8,8 +8,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var settingsWindowController = SettingsWindowController(controller: controller)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
         controller.start()
+
+        if let folderToApply = autoApplyFolderURL(from: CommandLine.arguments) {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do {
+                    let result = try controller.autoApplyThemeFolder(folderToApply)
+                    print("identifier: \(result.appliedIdentifier)")
+                } catch {
+                    let message = error.localizedDescription
+                    fputs("자동 적용 실패: \(message)\n", stderr)
+                    NSApp.terminate(nil)
+                    return
+                }
+                NSApp.terminate(nil)
+            }
+            return
+        }
+
+        NSApp.setActivationPolicy(.regular)
         openSettingsIfNeeded()
     }
 
@@ -27,6 +45,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !hasOpenedSettingsOnLaunch else { return }
         hasOpenedSettingsOnLaunch = true
         openSettingsWindow()
+    }
+
+    private func autoApplyFolderURL(from arguments: [String]) -> URL? {
+        guard let optionIndex = arguments.firstIndex(of: "--apply-folder") else { return nil }
+        let valueIndex = arguments.index(after: optionIndex)
+        guard valueIndex < arguments.endIndex else { return nil }
+        return URL(fileURLWithPath: arguments[valueIndex], isDirectory: true)
     }
 }
 
