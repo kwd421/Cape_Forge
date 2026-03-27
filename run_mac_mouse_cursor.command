@@ -14,4 +14,4 @@ env \
   SWIFTPM_MODULECACHE_OVERRIDE="$MODULE_CACHE" \
   swift build
 
-exec "$PROJECT_DIR/.build/debug/MacMouseCursor"
+exec "$PROJECT_DIR/.build/debug/CapeForge"

@@ -177,7 +177,6 @@ final class CursorController: ObservableObject {
     @Published private(set) var assignments: [CursorAssignment] = []
     @Published private(set) var statusText = "초기화 중..."
 
-    private let defaults = UserDefaults.standard
     private let parser = AniParser()
     private let capeExporter = CapeExporter()
     private let cursorMatcher = CursorMatcher()
@@ -212,10 +211,8 @@ final class CursorController: ObservableObject {
         let normalizedNewURL = url.standardizedFileURL
         let previousURL = selectedFolderURL?.standardizedFileURL
         selectedFolderURL = url
-        defaults.set(url.path, forKey: Keys.folderPath)
         if previousURL != normalizedNewURL, !overrideURLs.isEmpty {
             overrideURLs.removeAll()
-            saveOverrides()
         }
         reload()
     }
@@ -236,13 +233,6 @@ final class CursorController: ObservableObject {
             return
         }
         overrideURLs[role] = url
-        saveOverrides()
-        reload()
-    }
-
-    func clearOverride(for role: CursorRole) {
-        overrideURLs.removeValue(forKey: role)
-        saveOverrides()
         reload()
     }
 
@@ -264,7 +254,7 @@ final class CursorController: ObservableObject {
             try capeExporter.exportCape(
                 name: capeDisplayName(),
                 author: NSFullUserName().isEmpty ? NSUserName() : NSFullUserName(),
-                identifier: "local.\(Bundle.main.bundleIdentifier ?? "macmousecursor").\(UUID().uuidString.lowercased())",
+                identifier: "local.\(Bundle.main.bundleIdentifier ?? "capeforge").\(UUID().uuidString.lowercased())",
                 theme: resolution.theme,
                 to: url
             )
@@ -339,17 +329,28 @@ final class CursorController: ObservableObject {
         }
 
         var animations: [CursorRole: CursorAnimation] = [:]
+        var parsedAnimationsByURL: [URL: CursorAnimation] = [:]
         let resolvedTheme = try themeResolver.resolveTheme(in: baseDirectory)
         var resolvedFiles = resolvedTheme.filesByRole
 
+        func parsedAnimation(for url: URL) throws -> CursorAnimation {
+            let normalizedURL = url.standardizedFileURL
+            if let cached = parsedAnimationsByURL[normalizedURL] {
+                return cached
+            }
+            let parsed = try parser.parseCursorFile(at: normalizedURL)
+            parsedAnimationsByURL[normalizedURL] = parsed
+            return parsed
+        }
+
         for role in CursorRole.allCases {
             if let override = overrideURLs[role], FileManager.default.fileExists(atPath: override.path) {
-                animations[role] = try parser.parseCursorFile(at: override)
+                animations[role] = try parsedAnimation(for: override)
                 resolvedFiles[role] = override
                 continue
             }
             guard let url = resolvedFiles[role] else { continue }
-            animations[role] = try parser.parseCursorFile(at: url)
+            animations[role] = try parsedAnimation(for: url)
         }
 
         guard animations[.arrow] != nil else {
@@ -373,7 +374,7 @@ final class CursorController: ObservableObject {
                 role: role,
                 defaultPreview: cursorMatcher.defaultPreview(for: role),
                 appliedPreview: applied,
-                sourceURL: autoResolved,
+                sourceURL: overrideURL ?? autoResolved,
                 isOverride: isOverride,
                 isResolved: applied != nil,
                 usesArrowFallback: !isOverride && fallbackRoles.contains(role)
@@ -395,21 +396,6 @@ final class CursorController: ObservableObject {
         }
     }
 
-    private func loadOverrides() -> [CursorRole: URL] {
-        guard let raw = defaults.dictionary(forKey: Keys.overrides) as? [String: String] else { return [:] }
-        var result: [CursorRole: URL] = [:]
-        for (key, path) in raw {
-            guard let role = CursorRole(rawValue: key) else { continue }
-            result[role] = URL(fileURLWithPath: path)
-        }
-        return result
-    }
-
-    private func saveOverrides() {
-        let raw = Dictionary(uniqueKeysWithValues: overrideURLs.map { ($0.key.rawValue, $0.value.path) })
-        defaults.set(raw, forKey: Keys.overrides)
-    }
-
     private func clearLegacyDefaults() {
         [
             "calibrationOffsets",
@@ -417,7 +403,7 @@ final class CursorController: ObservableObject {
             "launchAtLogin",
             "selectedBorder",
             "selectedStyle"
-        ].forEach { defaults.removeObject(forKey: $0) }
+        ].forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
     private func mousecapeCapeURL(for identifier: String) throws -> URL {
@@ -431,7 +417,7 @@ final class CursorController: ObservableObject {
     private func stableCapeIdentifier(for url: URL) -> String {
         let slug = sanitizedIdentifierComponent(from: url.deletingPathExtension().lastPathComponent)
         let digest = fnv1a64Hex(url.standardizedFileURL.path)
-        return "local.macmousecursor.\(slug).\(digest)"
+        return "local.capeforge.\(slug).\(digest)"
     }
 
     private func sanitizedIdentifierComponent(from value: String) -> String {
@@ -532,9 +518,8 @@ final class CursorController: ObservableObject {
         process.standardError = outputPipe
 
         try process.run()
-        process.waitUntilExit()
-
         let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
         let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         if !text.isEmpty {
@@ -554,13 +539,9 @@ final class CursorController: ObservableObject {
         let raw = capeDisplayName()
         let invalid = CharacterSet(charactersIn: "/:\\")
         let cleaned = raw.components(separatedBy: invalid).joined(separator: "-")
-        return cleaned.isEmpty ? "MacMouseCursor.cape" : "\(cleaned).cape"
+        return cleaned.isEmpty ? "CapeForge.cape" : "\(cleaned).cape"
     }
 
-    private enum Keys {
-        static let folderPath = "selectedFolderPath"
-        static let overrides = "overridePaths"
-    }
 }
 
 enum CursorError: LocalizedError {

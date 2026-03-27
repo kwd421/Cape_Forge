@@ -1,7 +1,7 @@
 import Foundation
 
 struct LaunchAgentManager {
-    private let identifier = "com.seinel.macmousecursor"
+    private let identifier = "com.seinel.capeforge"
 
     func setEnabled(_ enabled: Bool) throws {
         let launchAgents = FileManager.default.homeDirectoryForCurrentUser
@@ -43,10 +43,10 @@ struct LaunchAgentManager {
         process.standardError = errorPipe
 
         try process.run()
+        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
 
         if process.terminationStatus != 0 && !allowFailure {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
             let message = String(data: errorData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
             throw CursorError.launchAgentUpdateFailed(message ?? "launchctl exited with status \(process.terminationStatus)")
         }

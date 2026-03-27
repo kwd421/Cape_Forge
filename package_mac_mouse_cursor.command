@@ -6,7 +6,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/.build"
 MODULE_CACHE="$PROJECT_DIR/.cache/clang/ModuleCache"
 DIST_DIR="$PROJECT_DIR/dist"
-APP_NAME="MacMouseCursor"
+APP_NAME="CapeForge"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -35,13 +35,13 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleExecutable</key>
-  <string>MacMouseCursor</string>
+  <string>CapeForge</string>
   <key>CFBundleIdentifier</key>
-  <string>com.seinel.macmousecursor</string>
+  <string>com.seinel.capeforge</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>MacMouseCursor</string>
+  <string>CapeForge</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

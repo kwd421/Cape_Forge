@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MacMouseCursorApp: App {
+struct CapeForgeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {

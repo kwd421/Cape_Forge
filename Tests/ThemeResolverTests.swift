@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import Testing
-@testable import MacMouseCursor
+@testable import CapeForge
 
 struct ThemeResolverTests {
     @Test

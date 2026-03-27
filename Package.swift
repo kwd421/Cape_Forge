@@ -2,21 +2,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "MacMouseCursor",
+    name: "CapeForge",
     platforms: [
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "MacMouseCursor", targets: ["MacMouseCursor"])
+        .executable(name: "CapeForge", targets: ["CapeForge"])
     ],
     targets: [
         .executableTarget(
-            name: "MacMouseCursor",
+            name: "CapeForge",
             path: "Sources"
         ),
         .testTarget(
-            name: "MacMouseCursorTests",
-            dependencies: ["MacMouseCursor"],
+            name: "CapeForgeTests",
+            dependencies: ["CapeForge"],
             path: "Tests"
         )
     ]
