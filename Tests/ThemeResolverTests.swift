@@ -261,16 +261,6 @@ struct ThemeResolverTests {
     }
 }
 
-struct CursorMatcherTests {
-    @MainActor
-    @Test
-    func selfTestMatchesRegisteredSystemCursors() {
-        let results = CursorMatcher().runSelfTest()
-        #expect(!results.isEmpty)
-        #expect(results.filter { !$0.passed }.isEmpty)
-    }
-}
-
 struct CapeExporterTests {
     @MainActor
     @Test

@@ -138,14 +138,10 @@ enum CursorRole: String, CaseIterable, Identifiable {
         }
     }
 
-    var roleHint: String? {
-        nil
-    }
 }
 
 struct CursorAssignment: Identifiable {
     let role: CursorRole
-    let defaultPreview: CursorAnimation
     let appliedPreview: CursorAnimation?
     let sourceURL: URL?
     let isOverride: Bool
@@ -173,7 +169,6 @@ final class CursorController: ObservableObject {
 
     private let parser = AniParser()
     private let capeExporter = CapeExporter()
-    private let cursorMatcher = CursorMatcher()
     private let themeResolver = ThemeResolver()
     private var overrideURLs: [CursorRole: URL] = [:]
 
@@ -335,7 +330,6 @@ final class CursorController: ObservableObject {
             let applied = theme[role]
             return CursorAssignment(
                 role: role,
-                defaultPreview: cursorMatcher.defaultPreview(for: role),
                 appliedPreview: applied,
                 sourceURL: overrideURL ?? autoResolved,
                 isOverride: isOverride,
@@ -349,7 +343,6 @@ final class CursorController: ObservableObject {
         CursorRole.allCases.map { role in
             CursorAssignment(
                 role: role,
-                defaultPreview: cursorMatcher.defaultPreview(for: role),
                 appliedPreview: nil,
                 sourceURL: overrideURLs[role],
                 isOverride: overrideURLs[role] != nil,
@@ -369,14 +362,14 @@ final class CursorController: ObservableObject {
     }
 
     private func capeDisplayName() -> String {
-        selectedFolderURL?.lastPathComponent.isEmpty == false ? selectedFolderURL!.lastPathComponent : "CapeForge Export"
+        selectedFolderURL?.lastPathComponent.isEmpty == false ? selectedFolderURL!.lastPathComponent : "Cape Forge Export"
     }
 
     private func sanitizedCapeFileName() -> String {
         let raw = capeDisplayName()
         let invalid = CharacterSet(charactersIn: "/:\\")
         let cleaned = raw.components(separatedBy: invalid).joined(separator: "-")
-        return cleaned.isEmpty ? "CapeForge.cape" : "\(cleaned).cape"
+        return cleaned.isEmpty ? "Cape Forge.cape" : "\(cleaned).cape"
     }
 
 }

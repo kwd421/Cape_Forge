@@ -1,4 +1,4 @@
-# CapeForge
+# Cape Forge
 
 macOS에서 사용자 커서 세트를 불러와 비교, 매핑하고 Mousecape 호환 `.cape` 파일로 내보내는 Swift 기반 도구입니다.
 
@@ -26,7 +26,7 @@ macOS에서 사용자 커서 세트를 불러와 비교, 매핑하고 Mousecape 
 
 ```bash
 ./package_mac_mouse_cursor.command
-open "./dist/CapeForge.app"
+open "./dist/Cape Forge.app"
 ```
 
 ## 참고

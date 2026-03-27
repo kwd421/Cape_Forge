@@ -6,8 +6,9 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/.build"
 MODULE_CACHE="$PROJECT_DIR/.cache/clang/ModuleCache"
 DIST_DIR="$PROJECT_DIR/dist"
-APP_NAME="CapeForge"
-APP_DIR="$DIST_DIR/$APP_NAME.app"
+APP_EXECUTABLE_NAME="CapeForge"
+APP_DISPLAY_NAME="Cape Forge"
+APP_DIR="$DIST_DIR/$APP_DISPLAY_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
@@ -24,8 +25,8 @@ env \
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
-cp "$BUILD_DIR/arm64-apple-macosx/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
-chmod +x "$MACOS_DIR/$APP_NAME"
+cp "$BUILD_DIR/arm64-apple-macosx/release/$APP_EXECUTABLE_NAME" "$MACOS_DIR/$APP_EXECUTABLE_NAME"
+chmod +x "$MACOS_DIR/$APP_EXECUTABLE_NAME"
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,7 +42,9 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>CapeForge</string>
+  <string>Cape Forge</string>
+  <key>CFBundleDisplayName</key>
+  <string>Cape Forge</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

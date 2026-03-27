@@ -5,7 +5,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Mac Mouse Cursor")
+            Text("Cape Forge")
                 .font(.headline)
 
             Text(controller.selectedFolderURL?.lastPathComponent ?? "커서 폴더를 선택하세요")
@@ -146,7 +146,6 @@ struct CursorRoleDetailView: View {
 
                 if let appliedPreview = assignment.appliedPreview {
                     PreviewGroup(
-                        title: "적용 커서",
                         subtitle: assignment.sourceURL?.lastPathComponent ?? "폴더에서 자동 매핑된 파일",
                         animation: appliedPreview
                     ) {
@@ -156,7 +155,6 @@ struct CursorRoleDetailView: View {
                     }
                 } else {
                     EmptyPreviewGroup(
-                        title: "적용 커서",
                         subtitle: assignment.sourceURL?.lastPathComponent ?? "불러온 커서가 없습니다"
                     ) {
                         Button("커서 파일 변경…") {
@@ -236,18 +234,15 @@ struct SettingsHeader: View {
 }
 
 struct PreviewGroup<TrailingAction: View>: View {
-    let title: String
     let subtitle: String
     let animation: CursorAnimation
     let trailingAction: TrailingAction
 
     init(
-        title: String,
         subtitle: String,
         animation: CursorAnimation,
         @ViewBuilder trailingAction: () -> TrailingAction = { EmptyView() }
     ) {
-        self.title = title
         self.subtitle = subtitle
         self.animation = animation
         self.trailingAction = trailingAction()
@@ -297,16 +292,13 @@ struct DetailItem<Content: View>: View {
 }
 
 struct EmptyPreviewGroup<TrailingAction: View>: View {
-    let title: String
     let subtitle: String
     let trailingAction: TrailingAction
 
     init(
-        title: String,
         subtitle: String,
         @ViewBuilder trailingAction: () -> TrailingAction = { EmptyView() }
     ) {
-        self.title = title
         self.subtitle = subtitle
         self.trailingAction = trailingAction()
     }

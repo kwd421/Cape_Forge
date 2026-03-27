@@ -36,7 +36,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let contentView = SettingsView(controller: controller)
         let hostingController = NSHostingController(rootView: contentView)
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "CapeForge"
+        window.title = "Cape Forge"
         window.setContentSize(NSSize(width: 920, height: 680))
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.center()
@@ -51,7 +51,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        sender.orderOut(nil)
-        return false
+        return true
     }
 }
