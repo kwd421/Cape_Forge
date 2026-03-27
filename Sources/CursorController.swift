@@ -182,8 +182,6 @@ final class CursorController: ObservableObject {
         statusText = "커서 폴더를 선택하세요."
     }
 
-    func stop() {}
-
     func chooseThemeFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -275,10 +273,6 @@ final class CursorController: ObservableObject {
 
     func assignment(for role: CursorRole) -> CursorAssignment? {
         assignments.first(where: { $0.role == role })
-    }
-
-    func placeholderAssignment(for role: CursorRole) -> CursorAssignment? {
-        unresolvedAssignments().first(where: { $0.role == role })
     }
 
     private func loadTheme() throws -> (theme: CursorTheme, filesByRole: [CursorRole: URL], fallbackRoles: Set<CursorRole>) {

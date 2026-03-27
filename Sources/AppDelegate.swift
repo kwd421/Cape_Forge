@@ -13,10 +13,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openSettingsIfNeeded()
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
-        controller.stop()
-    }
-
     func openSettingsWindow() {
         settingsWindowController.showWindow(nil)
         settingsWindowController.window?.makeKeyAndOrderFront(nil)

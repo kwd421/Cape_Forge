@@ -52,7 +52,7 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             NavigationSplitView {
                 List(CursorRole.allCases, selection: $selection) { role in
-                    if let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
+                    if let assignment = controller.assignment(for: role) {
                         CursorRoleRow(assignment: assignment)
                             .tag(role)
                     }
@@ -60,7 +60,7 @@ struct SettingsView: View {
                 .navigationTitle("커서")
                 .frame(minWidth: 230)
             } detail: {
-                if let role = selection, let assignment = controller.assignment(for: role) ?? controller.placeholderAssignment(for: role) {
+                if let role = selection, let assignment = controller.assignment(for: role) {
                     CursorRoleDetailView(controller: controller, assignment: assignment)
                 } else {
                     VStack(spacing: 12) {
