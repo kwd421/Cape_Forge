@@ -388,4 +388,40 @@ struct CapeExporterTests {
         #expect(cursors["com.apple.cursor.30"] != nil)
         #expect(cursors["com.apple.cursor.37"] != nil)
     }
+
+    @MainActor
+    @Test
+    func exportsCapeFromEnvironmentWhenRequested() throws {
+        guard
+            let folderPath = ProcessInfo.processInfo.environment["MAC_MOUSE_CURSOR_EXPORT_FOLDER"],
+            let exportPath = ProcessInfo.processInfo.environment["MAC_MOUSE_CURSOR_EXPORT_PATH"],
+            !folderPath.isEmpty,
+            !exportPath.isEmpty
+        else {
+            return
+        }
+
+        let folderURL = URL(fileURLWithPath: folderPath, isDirectory: true)
+        let exportURL = URL(fileURLWithPath: exportPath, isDirectory: false)
+
+        let resolver = ThemeResolver()
+        let parser = AniParser()
+        let resolved = try resolver.resolveTheme(in: folderURL)
+        var animations: [CursorRole: CursorAnimation] = [:]
+        for (role, fileURL) in resolved.filesByRole {
+            animations[role] = try parser.parseCursorFile(at: fileURL)
+        }
+        let theme = CursorTheme(animations: animations)
+
+        try CapeExporter().exportCape(
+            name: "Codex Integration Export",
+            author: "Codex",
+            identifier: "local.codex.integration",
+            theme: theme,
+            to: exportURL
+        )
+
+        #expect(FileManager.default.fileExists(atPath: exportURL.path))
+        print("EXPORTED_CAPE_PATH=\(exportURL.path)")
+    }
 }

@@ -11,15 +11,12 @@ struct CapeForgeApp: App {
         }
         .commands {
             CommandMenu("Language") {
-                Button(Localized.string(AppLanguage.korean.titleKey)) {
-                    languageBinding.wrappedValue = .korean
+                ForEach(AppLanguage.allCases) { language in
+                    Button(Localized.string(language.titleKey)) {
+                        languageBinding.wrappedValue = language
+                    }
+                    .disabled(languageBinding.wrappedValue == language)
                 }
-                .disabled(languageBinding.wrappedValue == .korean)
-
-                Button(Localized.string(AppLanguage.english.titleKey)) {
-                    languageBinding.wrappedValue = .english
-                }
-                .disabled(languageBinding.wrappedValue == .english)
             }
         }
     }
@@ -36,6 +33,36 @@ struct CapeForgeApp: App {
 
     private var inferredInitialLanguage: AppLanguage {
         let preferred = Locale.preferredLanguages.first?.lowercased() ?? "en"
-        return preferred.hasPrefix("ko") ? .korean : .english
+        if preferred.hasPrefix("ko") {
+            return .korean
+        }
+        if preferred.hasPrefix("ja") {
+            return .japanese
+        }
+        if preferred.contains("hant") {
+            return .traditionalChinese
+        }
+        if preferred.hasPrefix("zh") {
+            return .simplifiedChinese
+        }
+        if preferred.hasPrefix("de") {
+            return .german
+        }
+        if preferred.hasPrefix("fr") {
+            return .french
+        }
+        if preferred.hasPrefix("es") {
+            return .spanish
+        }
+        if preferred.hasPrefix("pt") {
+            return .portugueseBrazil
+        }
+        if preferred.hasPrefix("it") {
+            return .italian
+        }
+        if preferred.hasPrefix("ru") {
+            return .russian
+        }
+        return .english
     }
 }

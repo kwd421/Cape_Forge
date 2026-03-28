@@ -139,6 +139,10 @@ struct CursorTheme {
 
 @MainActor
 final class CursorController: ObservableObject {
+    private enum DefaultsKey {
+        static let exportAuthorName = "exportAuthorName"
+    }
+
     private enum StatusState {
         case startingUp
         case chooseCursorFolder
@@ -154,12 +158,26 @@ final class CursorController: ObservableObject {
     @Published private(set) var resolvedRoleCount = 0
     @Published private(set) var assignments: [CursorAssignment] = []
     @Published private(set) var statusText = Localized.string("status.startingUp")
+    @Published var exportAuthorName: String {
+        didSet {
+            let trimmed = exportAuthorName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                UserDefaults.standard.removeObject(forKey: DefaultsKey.exportAuthorName)
+            } else {
+                UserDefaults.standard.set(exportAuthorName, forKey: DefaultsKey.exportAuthorName)
+            }
+        }
+    }
 
     private let parser = AniParser()
     private let capeExporter = CapeExporter()
     private let themeResolver = ThemeResolver()
     private var overrideURLs: [CursorRole: URL] = [:]
     private var statusState: StatusState = .startingUp
+
+    init() {
+        exportAuthorName = UserDefaults.standard.string(forKey: DefaultsKey.exportAuthorName) ?? ""
+    }
 
     func start() {
         clearLegacyDefaults()
@@ -217,9 +235,24 @@ final class CursorController: ObservableObject {
         reload()
     }
 
-    func exportMousecapeCape() {
+    func exportMousecapeCape(authorName: String) {
         do {
             let resolution = try loadTheme()
+            let trimmedAuthor = authorName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let author: String
+            if trimmedAuthor.isEmpty {
+                let fallbackAuthor = defaultAuthorName()
+                let alert = NSAlert()
+                alert.messageText = Localized.string("export.emptyAuthorTitle")
+                alert.informativeText = Localized.string("export.emptyAuthorMessage", fallbackAuthor)
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: Localized.string("export.useMacUserName"))
+                alert.addButton(withTitle: Localized.string("export.cancel"))
+                guard alert.runModal() == .alertFirstButtonReturn else { return }
+                author = fallbackAuthor
+            } else {
+                author = trimmedAuthor
+            }
             let panel = NSSavePanel()
             panel.allowedContentTypes = [.data]
             panel.nameFieldStringValue = sanitizedCapeFileName()
@@ -232,9 +265,11 @@ final class CursorController: ObservableObject {
                 url.appendPathExtension("cape")
             }
 
+            let exportName = exportCapeDisplayName(for: url)
+
             try capeExporter.exportCape(
-                name: capeDisplayName(),
-                author: NSFullUserName().isEmpty ? NSUserName() : NSFullUserName(),
+                name: exportName,
+                author: author,
                 identifier: "local.\(Bundle.main.bundleIdentifier ?? "capeforge").\(UUID().uuidString.lowercased())",
                 theme: resolution.theme,
                 to: url
@@ -358,6 +393,28 @@ final class CursorController: ObservableObject {
         let invalid = CharacterSet(charactersIn: "/:\\")
         let cleaned = raw.components(separatedBy: invalid).joined(separator: "-")
         return cleaned.isEmpty ? "Cape Forge.cape" : "\(cleaned).cape"
+    }
+
+    private func exportCapeDisplayName(for url: URL) -> String {
+        let candidate = url.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !candidate.isEmpty {
+            return candidate
+        }
+        return capeDisplayName()
+    }
+
+    func defaultAuthorName() -> String {
+        let fullName = NSFullUserName().trimmingCharacters(in: .whitespacesAndNewlines)
+        if !fullName.isEmpty {
+            return fullName
+        }
+
+        let userName = NSUserName().trimmingCharacters(in: .whitespacesAndNewlines)
+        if !userName.isEmpty {
+            return userName
+        }
+
+        return Localized.string("export.unknownAuthor")
     }
 
     private func setStatus(_ state: StatusState) {

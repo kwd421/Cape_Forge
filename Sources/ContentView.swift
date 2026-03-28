@@ -81,16 +81,42 @@ struct SettingsView: View {
                 }
             }
             Divider()
-            HStack {
-                Spacer()
-                Button(Localized.string("app.exportToMousecape")) {
-                    controller.exportMousecapeCape()
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
+            ExportSection(controller: controller)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
         }
         .frame(minWidth: 860, minHeight: 620)
+    }
+}
+
+struct ExportSection: View {
+    @ObservedObject var controller: CursorController
+    @ObservedObject private var localization = LocalizationController.shared
+
+    var body: some View {
+        let _ = localization.selectedLanguage
+        GroupBox {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(Localized.string("export.authorLabel"))
+                        .font(.headline)
+                    TextField(Localized.string("export.authorPlaceholder"), text: $controller.exportAuthorName)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 320)
+                }
+
+                Spacer(minLength: 24)
+
+                Button(Localized.string("app.exportToMousecape")) {
+                    controller.exportMousecapeCape(authorName: controller.exportAuthorName)
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            EmptyView()
+        }
     }
 }
 

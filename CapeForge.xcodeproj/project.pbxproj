@@ -55,8 +55,6 @@
 		};
 		A00000000000000000000003 /* Sources */ = {
 			isa = PBXGroup;
-			path = Sources;
-			sourceTree = "<group>";
 			children = (
 				A00000000000000000000011 /* AniParser.swift */,
 				A00000000000000000000012 /* AppDelegate.swift */,
@@ -67,16 +65,18 @@
 				A0000000000000000000001B /* Localization.swift */,
 				A00000000000000000000017 /* ThemeResolver.swift */,
 			);
+			path = Sources;
+			sourceTree = "<group>";
 		};
 		A00000000000000000000004 /* CapeForgeApp */ = {
 			isa = PBXGroup;
-			path = CapeForgeApp;
-			sourceTree = "<group>";
 			children = (
 				A00000000000000000000018 /* Info.plist */,
 				A00000000000000000000019 /* CapeForge.entitlements */,
 				A0000000000000000000001A /* Assets.xcassets */,
 			);
+			path = CapeForgeApp;
+			sourceTree = "<group>";
 		};
 		A00000000000000000000005 /* Products */ = {
 			isa = PBXGroup;
@@ -129,6 +129,7 @@
 				Base,
 			);
 			mainGroup = A00000000000000000000002;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = A00000000000000000000005 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -213,6 +214,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = DRUFU8Q688;
 				ENABLE_APP_SANDBOX = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CapeForgeApp/Info.plist;
@@ -239,6 +241,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = DRUFU8Q688;
 				ENABLE_APP_SANDBOX = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CapeForgeApp/Info.plist;

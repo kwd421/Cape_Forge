@@ -37,6 +37,30 @@ Open `CapeForge.xcodeproj` in Xcode, then archive the `CapeForge` target.
 - The app is configured to access only folders and save locations chosen by the user.
 - For Mac App Store submission, use the Xcode Organizer archive flow.
 
+## GitHub Pages
+
+This repository is already structured for GitHub Pages with the `/docs` folder.
+
+Suggested public URLs:
+
+- Support URL: `https://kwd421.github.io/mac_mouse_cursor/`
+- Privacy Policy URL: `https://kwd421.github.io/mac_mouse_cursor/privacy.html`
+- Korean Support URL: `https://kwd421.github.io/mac_mouse_cursor/ko/`
+- Korean Privacy Policy URL: `https://kwd421.github.io/mac_mouse_cursor/ko/privacy.html`
+
+GitHub Pages setup:
+
+1. Push the repository to GitHub.
+2. Open the repository settings.
+3. Go to `Pages`.
+4. Set the source to `Deploy from a branch`.
+5. Choose the `main` branch and the `/docs` folder.
+6. Save and wait for the site to publish.
+
+Support contact:
+
+- `tonistark@naver.com`
+
 ## Notes
 
 Both the runtime path and the packaging path are Swift app flows.
