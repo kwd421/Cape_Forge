@@ -29,6 +29,12 @@ Limitations:
 open "./dist/Cape Forge.app"
 ```
 
+This packaging script is for local development builds only.
+
+- It packages the SwiftPM release binary into a lightweight `.app`.
+- Files in [`tools/`](/Users/seinel/Projects/mac_mouse_cursor/tools) are developer utilities and are not included in the app bundle.
+- It is not the App Store packaging path.
+
 ## App Store Build
 
 Open `CapeForge.xcodeproj` in Xcode, then archive the `CapeForge` target.

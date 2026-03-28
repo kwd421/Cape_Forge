@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Local packaging helper for development builds.
+# This creates a lightweight app bundle from the SwiftPM release binary.
+# It does not replace the Xcode archive/export flow used for App Store distribution.
+
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/.build"
 MODULE_CACHE="$PROJECT_DIR/.cache/clang/ModuleCache"
@@ -63,6 +67,9 @@ PLIST
 
 echo "App bundle created at:"
 echo "$APP_DIR"
+echo
+echo "Developer tools in ./tools are not bundled into this app."
+echo "For App Store distribution, archive the Xcode target instead of using this script."
 echo
 echo "To launch:"
 echo "open \"$APP_DIR\""
