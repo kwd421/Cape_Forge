@@ -28,6 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hasOpenedSettingsOnLaunch = true
         openSettingsWindow()
     }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
+    }
 }
 
 @MainActor

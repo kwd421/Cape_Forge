@@ -18,7 +18,7 @@ struct CapeExporter {
         .link: ["com.apple.cursor.2", "com.apple.cursor.13"],
         .location: ["com.apple.coregraphics.Copy", "com.apple.cursor.5"],
         .precision: ["com.apple.cursor.7", "com.apple.cursor.8"],
-        .move: ["com.apple.coregraphics.Move", "com.apple.cursor.11", "com.apple.cursor.12"],
+        .move: ["com.apple.coregraphics.Move"],
         .unavailable: ["com.apple.cursor.3"],
         .busy: ["com.apple.cursor.4"],
         .working: ["com.apple.coregraphics.Wait"],

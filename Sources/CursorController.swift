@@ -91,7 +91,7 @@ enum CursorRole: String, CaseIterable, Identifiable {
         case .precision:
             return "Crosshair, Crosshair 2"
         case .move:
-            return "Move, Closed, Open"
+            return "Move"
         case .unavailable:
             return "Forbidden"
         case .busy:
@@ -180,11 +180,11 @@ enum SupplementalCursorRole: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .contextualMenu: return Localized.string("role.contextualMenu")
+        case .contextualMenu: return "Contextual Menu"
         case .contextMenuLegacy: return "Ctx Menu"
-        case .dragCopy: return Localized.string("role.dragCopy")
-        case .dragLink: return Localized.string("role.dragLink")
-        case .disappearingItem: return Localized.string("role.disappearingItem")
+        case .dragCopy: return "Drag Copy"
+        case .dragLink: return "Drag Link"
+        case .disappearingItem: return "Disappearing Item"
         case .empty: return "Empty"
         case .camera: return "Camera"
         case .camera2: return "Camera 2"
@@ -192,17 +192,17 @@ enum SupplementalCursorRole: String, CaseIterable, Identifiable {
         case .countingUp: return "Counting Up"
         case .countingDown: return "Counting Down"
         case .countingUpDown: return "Counting Up/Down"
-        case .closeHand: return Localized.string("role.closeHand")
-        case .openHand: return Localized.string("role.openHand")
+        case .closeHand: return "Closed"
+        case .openHand: return "Open"
         case .poof: return "Poof"
         case .resizeSquare: return "Resize Square"
-        case .resizeUp: return Localized.string("role.resizeUp")
-        case .resizeDown: return Localized.string("role.resizeDown")
-        case .resizeLeft: return Localized.string("role.resizeLeft")
-        case .resizeRight: return Localized.string("role.resizeRight")
-        case .verticalIBeam: return Localized.string("role.verticalIBeam")
-        case .zoomIn: return Localized.string("role.zoomIn")
-        case .zoomOut: return Localized.string("role.zoomOut")
+        case .resizeUp: return "Resize Up"
+        case .resizeDown: return "Resize Down"
+        case .resizeLeft: return "Resize Left"
+        case .resizeRight: return "Resize Right"
+        case .verticalIBeam: return "Vertical IBeam"
+        case .zoomIn: return "Zoom In"
+        case .zoomOut: return "Zoom Out"
         }
     }
 
