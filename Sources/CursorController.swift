@@ -153,54 +153,102 @@ struct CursorTheme {
 
 enum SupplementalCursorRole: String, CaseIterable, Identifiable {
     case contextualMenu
+    case contextMenuLegacy
     case dragCopy
     case dragLink
     case disappearingItem
+    case empty
+    case camera
+    case camera2
+    case iBeamHorizontal
+    case countingUp
+    case countingDown
+    case countingUpDown
+    case closeHand
+    case openHand
+    case poof
+    case resizeSquare
     case resizeUp
     case resizeDown
     case resizeLeft
     case resizeRight
     case verticalIBeam
+    case zoomIn
+    case zoomOut
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
         case .contextualMenu: return Localized.string("role.contextualMenu")
+        case .contextMenuLegacy: return "Ctx Menu"
         case .dragCopy: return Localized.string("role.dragCopy")
         case .dragLink: return Localized.string("role.dragLink")
         case .disappearingItem: return Localized.string("role.disappearingItem")
+        case .empty: return "Empty"
+        case .camera: return "Camera"
+        case .camera2: return "Camera 2"
+        case .iBeamHorizontal: return "IBeam H."
+        case .countingUp: return "Counting Up"
+        case .countingDown: return "Counting Down"
+        case .countingUpDown: return "Counting Up/Down"
+        case .closeHand: return Localized.string("role.closeHand")
+        case .openHand: return Localized.string("role.openHand")
+        case .poof: return "Poof"
+        case .resizeSquare: return "Resize Square"
         case .resizeUp: return Localized.string("role.resizeUp")
         case .resizeDown: return Localized.string("role.resizeDown")
         case .resizeLeft: return Localized.string("role.resizeLeft")
         case .resizeRight: return Localized.string("role.resizeRight")
         case .verticalIBeam: return Localized.string("role.verticalIBeam")
+        case .zoomIn: return Localized.string("role.zoomIn")
+        case .zoomOut: return Localized.string("role.zoomOut")
         }
     }
 
     var mousecapeMappingDescription: String {
         switch self {
         case .contextualMenu: return "Contextual Menu"
+        case .contextMenuLegacy: return "Ctx Menu"
         case .dragCopy: return "Drag Copy"
         case .dragLink: return "Drag Link"
         case .disappearingItem: return "Disappearing Item"
+        case .empty: return "Empty"
+        case .camera: return "Camera"
+        case .camera2: return "Camera 2"
+        case .iBeamHorizontal: return "IBeam H."
+        case .countingUp: return "Counting Up"
+        case .countingDown: return "Counting Down"
+        case .countingUpDown: return "Counting Up/Down"
+        case .closeHand: return "Closed"
+        case .openHand: return "Open"
+        case .poof: return "Poof"
+        case .resizeSquare: return "Resize Square"
         case .resizeUp: return "Resize Up"
         case .resizeDown: return "Resize Down"
         case .resizeLeft: return "Resize Left"
         case .resizeRight: return "Resize Right"
         case .verticalIBeam: return "Vertical IBeam"
+        case .zoomIn: return "Zoom In"
+        case .zoomOut: return "Zoom Out"
         }
     }
 
     var mappedPrimaryRole: CursorRole {
         switch self {
-        case .contextualMenu: return .link
+        case .contextualMenu, .contextMenuLegacy: return .link
         case .dragCopy: return .location
         case .dragLink: return .alternate
-        case .disappearingItem: return .unavailable
+        case .disappearingItem, .empty: return .unavailable
+        case .camera, .camera2, .resizeSquare: return .precision
+        case .iBeamHorizontal: return .text
+        case .countingUp, .countingDown, .countingUpDown: return .busy
+        case .closeHand, .openHand: return .move
+        case .poof: return .unavailable
         case .resizeUp, .resizeDown: return .verticalResize
         case .resizeLeft, .resizeRight: return .horizontalResize
         case .verticalIBeam: return .text
+        case .zoomIn, .zoomOut: return .precision
         }
     }
 }

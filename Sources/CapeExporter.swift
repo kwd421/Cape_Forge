@@ -34,14 +34,28 @@ struct CapeExporter {
 
     private let supplementalIdentifiers: [SupplementalCursorRole: [String]] = [
         .contextualMenu: ["com.apple.coregraphics.ArrowCtx"],
+        .contextMenuLegacy: ["com.apple.cursor.24"],
         .dragCopy: ["com.apple.coregraphics.CopyDrag"],
         .dragLink: ["com.apple.coregraphics.LinkDrag"],
         .disappearingItem: ["com.apple.coregraphics.DisappearingItem"],
+        .empty: ["com.apple.coregraphics.Empty"],
+        .camera: ["com.apple.cursor.10"],
+        .camera2: ["com.apple.cursor.9"],
+        .iBeamHorizontal: ["com.apple.cursor.26"],
+        .countingUp: ["com.apple.cursor.14"],
+        .countingDown: ["com.apple.cursor.15"],
+        .countingUpDown: ["com.apple.cursor.16"],
+        .closeHand: ["com.apple.cursor.11"],
+        .openHand: ["com.apple.cursor.12"],
+        .poof: ["com.apple.cursor.25"],
+        .resizeSquare: ["com.apple.cursor.39"],
         .resizeUp: ["com.apple.coregraphics.ResizeUp"],
         .resizeDown: ["com.apple.coregraphics.ResizeDown"],
         .resizeLeft: ["com.apple.coregraphics.ResizeLeft"],
         .resizeRight: ["com.apple.coregraphics.ResizeRight"],
-        .verticalIBeam: ["com.apple.coregraphics.IBeamForVerticalLayout"]
+        .verticalIBeam: ["com.apple.coregraphics.IBeamForVerticalLayout"],
+        .zoomIn: ["com.apple.cursor.42"],
+        .zoomOut: ["com.apple.cursor.43"]
     ]
 
     func exportCape(

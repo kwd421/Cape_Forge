@@ -72,11 +72,13 @@ struct SettingsView: View {
                 List(selection: $selection) {
                     ForEach(CursorRole.allCases) { role in
                         if let assignment = controller.assignment(for: role) {
-                            CursorRoleRow(assignment: assignment)
-                                .tag(SidebarCursorItem.primary(role))
-                                .onTapGesture {
-                                    selection = .primary(role)
-                                }
+                            Button {
+                                selection = .primary(role)
+                            } label: {
+                                CursorRoleRow(assignment: assignment)
+                            }
+                            .buttonStyle(.plain)
+                            .tag(SidebarCursorItem.primary(role))
                         }
                     }
 
@@ -95,11 +97,13 @@ struct SettingsView: View {
 
                         if isSupplementalExpanded {
                             ForEach(SupplementalCursorRole.allCases) { role in
-                                SupplementalCursorRoleRow(assignment: controller.supplementalAssignment(for: role))
-                                    .tag(SidebarCursorItem.supplemental(role))
-                                    .onTapGesture {
-                                        selection = .supplemental(role)
-                                    }
+                                Button {
+                                    selection = .supplemental(role)
+                                } label: {
+                                    SupplementalCursorRoleRow(assignment: controller.supplementalAssignment(for: role))
+                                }
+                                .buttonStyle(.plain)
+                                .tag(SidebarCursorItem.supplemental(role))
                             }
                         }
                     }

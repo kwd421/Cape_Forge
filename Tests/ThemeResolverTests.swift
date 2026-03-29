@@ -581,6 +581,10 @@ struct CapeExporterTests {
             .location: animation,
             .alternate: animation,
             .unavailable: animation,
+            .move: animation,
+            .precision: animation,
+            .busy: animation,
+            .working: animation,
             .verticalResize: animation,
             .horizontalResize: animation,
             .text: animation
@@ -602,14 +606,28 @@ struct CapeExporterTests {
         let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
 
         #expect(cursors["com.apple.coregraphics.ArrowCtx"] != nil)
+        #expect(cursors["com.apple.cursor.24"] != nil)
         #expect(cursors["com.apple.coregraphics.CopyDrag"] != nil)
         #expect(cursors["com.apple.coregraphics.LinkDrag"] != nil)
         #expect(cursors["com.apple.coregraphics.DisappearingItem"] != nil)
+        #expect(cursors["com.apple.coregraphics.Empty"] != nil)
+        #expect(cursors["com.apple.cursor.10"] != nil)
+        #expect(cursors["com.apple.cursor.9"] != nil)
+        #expect(cursors["com.apple.cursor.26"] != nil)
+        #expect(cursors["com.apple.cursor.14"] != nil)
+        #expect(cursors["com.apple.cursor.15"] != nil)
+        #expect(cursors["com.apple.cursor.16"] != nil)
+        #expect(cursors["com.apple.cursor.25"] != nil)
+        #expect(cursors["com.apple.cursor.39"] != nil)
         #expect(cursors["com.apple.coregraphics.ResizeUp"] != nil)
         #expect(cursors["com.apple.coregraphics.ResizeDown"] != nil)
         #expect(cursors["com.apple.coregraphics.ResizeLeft"] != nil)
         #expect(cursors["com.apple.coregraphics.ResizeRight"] != nil)
         #expect(cursors["com.apple.coregraphics.IBeamForVerticalLayout"] != nil)
+        #expect(cursors["com.apple.cursor.11"] != nil)
+        #expect(cursors["com.apple.cursor.12"] != nil)
+        #expect(cursors["com.apple.cursor.42"] != nil)
+        #expect(cursors["com.apple.cursor.43"] != nil)
     }
 
     @MainActor
