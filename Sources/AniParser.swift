@@ -52,7 +52,9 @@ struct AniParser {
         }
 
         let frames = try cursorChunks.map { chunk in
-            try decodeFrame(from: chunk, defaultDelay: TimeInterval(max(jiffies, 1)) / 60.0)
+            try autoreleasepool {
+                try decodeFrame(from: chunk, defaultDelay: TimeInterval(max(jiffies, 1)) / 60.0)
+            }
         }
         guard let first = frames.first else {
             throw CursorError.invalidANI(Localized.string("error.noFrames"))

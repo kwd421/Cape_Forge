@@ -227,6 +227,12 @@ struct SupplementalCursorAssignment: Identifiable {
     var id: SupplementalCursorRole { role }
 }
 
+struct UserFacingAlert: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+}
+
 @MainActor
 final class CursorController: ObservableObject {
     private enum DefaultsKey {
@@ -248,6 +254,7 @@ final class CursorController: ObservableObject {
     @Published private(set) var resolvedRoleCount = 0
     @Published private(set) var assignments: [CursorAssignment] = []
     @Published private(set) var statusText = Localized.string("status.startingUp")
+    @Published var activeAlert: UserFacingAlert?
     @Published var exportAuthorName: String {
         didSet {
             let trimmed = exportAuthorName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -334,6 +341,7 @@ final class CursorController: ObservableObject {
         let ext = url.pathExtension.lowercased()
         guard ext == "ani" || ext == "cur" else {
             setStatus(.supportedFiles)
+            presentError(Localized.string("status.supportedFiles"))
             return
         }
         overrideURLs[role] = url
@@ -353,6 +361,7 @@ final class CursorController: ObservableObject {
         let ext = url.pathExtension.lowercased()
         guard ext == "ani" || ext == "cur" else {
             setStatus(.supportedFiles)
+            presentError(Localized.string("status.supportedFiles"))
             return
         }
         if let inheritedURL = effectiveSupplementalInheritedSourceURL(for: role),
@@ -407,6 +416,7 @@ final class CursorController: ObservableObject {
             setStatus(.exportSuccess(url.lastPathComponent))
         } catch {
             setStatus(.exportFailure(error.localizedDescription))
+            presentError(error.localizedDescription)
         }
     }
 
@@ -429,6 +439,9 @@ final class CursorController: ObservableObject {
             resolvedRoleCount = 0
             selectedFolderIsValid = false
             setStatus(.loadFailure(error.localizedDescription))
+            if selectedFolderURL != nil {
+                presentError(error.localizedDescription)
+            }
         }
     }
 
@@ -472,7 +485,9 @@ final class CursorController: ObservableObject {
             if let cached = parsedAnimationsByURL[normalizedURL] {
                 return cached
             }
-            let parsed = try parser.parseCursorFile(at: normalizedURL)
+            let parsed = try autoreleasepool {
+                try parser.parseCursorFile(at: normalizedURL)
+            }
             parsedAnimationsByURL[normalizedURL] = parsed
             return parsed
         }
@@ -608,6 +623,13 @@ final class CursorController: ObservableObject {
         }
 
         return Localized.string("export.unknownAuthor")
+    }
+
+    private func presentError(_ message: String) {
+        activeAlert = UserFacingAlert(
+            title: Localized.string("alert.errorTitle"),
+            message: message
+        )
     }
 
     private func setStatus(_ state: StatusState) {

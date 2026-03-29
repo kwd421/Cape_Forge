@@ -117,6 +117,13 @@ struct SettingsView: View {
                 .padding(.vertical, 14)
         }
         .frame(minWidth: 860, minHeight: 620)
+        .alert(item: $controller.activeAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                dismissButton: .default(Text(Localized.string("alert.ok")))
+            )
+        }
     }
 }
 

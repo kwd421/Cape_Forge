@@ -95,7 +95,9 @@ struct CapeExporter {
 
     private func cursorDictionary(for animation: CursorAnimation, sizeMultiplier: Double) throws -> [String: Any] {
         let renderedFrames = try animation.frames.map { frame in
-            try bitmapRep(for: frame.image, canvasSize: animation.canvasSize)
+            try autoreleasepool {
+                try bitmapRep(for: frame.image, canvasSize: animation.canvasSize)
+            }
         }
 
         let basePixelWidth = renderedFrames.map(\.pixelsWide).max() ?? 1
@@ -107,7 +109,9 @@ struct CapeExporter {
             sizeMultiplier: sizeMultiplier
         )
         let scaledFrames = try renderedFrames.map { frame in
-            try scaledBitmapRep(for: frame, width: metrics.targetPixelWidth, height: metrics.targetPixelHeight)
+            try autoreleasepool {
+                try scaledBitmapRep(for: frame, width: metrics.targetPixelWidth, height: metrics.targetPixelHeight)
+            }
         }
 
         let stacked = try stack(frames: scaledFrames, width: metrics.targetPixelWidth, height: metrics.targetPixelHeight)
@@ -252,14 +256,16 @@ struct CapeExporter {
 
         var currentY = 0
         for frame in frames.reversed() {
-            frame.draw(
-                in: NSRect(x: 0, y: currentY, width: frame.pixelsWide, height: frame.pixelsHigh),
-                from: .zero,
-                operation: .sourceOver,
-                fraction: 1.0,
-                respectFlipped: true,
-                hints: nil
-            )
+            _ = autoreleasepool {
+                frame.draw(
+                    in: NSRect(x: 0, y: currentY, width: frame.pixelsWide, height: frame.pixelsHigh),
+                    from: .zero,
+                    operation: .sourceOver,
+                    fraction: 1.0,
+                    respectFlipped: true,
+                    hints: nil
+                )
+            }
             currentY += frame.pixelsHigh
         }
 
