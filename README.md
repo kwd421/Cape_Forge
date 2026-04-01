@@ -1,72 +1,41 @@
 # Cape Forge
 
-A Swift tool for macOS that loads cursor sets, maps them to cursor roles, and exports Mousecape-compatible `.cape` files.
+Cape Forge is a macOS app that converts Windows cursor files and cursor packs (`.cur`, `.ani`) into Mousecape-compatible `.cape` files.
 
-The primary runtime path is a standard macOS app.
+If you want to actually apply the exported cursor theme on macOS, you will need [Mousecape](https://github.com/alexzielenski/Mousecape) or another app that can use `.cape` files.
 
-- Reads `.ani` and `.cur` files from a folder chosen by the user.
-- Automatically maps cursor files in the folder to cursor roles.
-- Previews the loaded cursor for each role.
-- Lets you manually override the file used for an individual role.
-- Parses PNG frames and hotspots directly from ANI files.
-- Exports `.cape` files that Mousecape can read.
+## What It Does
 
-Limitations:
+- Loads `.cur` and `.ani` cursor files from a folder
+- Automatically maps common cursor roles
+- Lets you preview each cursor before export
+- Lets you replace individual cursor roles manually
+- Exports a `.cape` file for use with Mousecape
 
-- This app focuses on cursor conversion and `.cape` export.
-- Applying the exported `.cape` file must be done in a separate app such as Mousecape.
+## How To Use
 
-## Run
+1. Open Cape Forge.
+2. Click `Choose Folder…` and select a folder that contains `.cur` or `.ani` files.
+3. Review the mapped cursor roles in the sidebar.
+4. If needed, select a role and click `Change Cursor File…` to replace it manually.
+5. Enter an author name.
+6. Click `Export as .cape File…`.
+7. Open the exported `.cape` file in Mousecape and apply it there.
 
-```bash
-./run_mac_mouse_cursor.command
-```
+## Tips
 
-## Package
+- Cursor packs with common names like `Normal`, `Text`, `Link`, `Busy`, and resize cursors tend to map best.
+- Additional cursors are optional. By default they stay on the macOS default cursor unless you assign them yourself.
+- You can drag and drop a cursor folder into the app to load it.
+- You can also drag and drop a single `.cur` or `.ani` file onto the app to replace the currently selected cursor role.
 
-```bash
-./package_mac_mouse_cursor.command
-open "./dist/Cape Forge.app"
-```
+## Requirements
 
-This packaging script is for local development builds only.
+- macOS 26.0 or later
+- Mousecape, if you want to apply the exported `.cape` file as your system cursor theme
 
-- It packages the SwiftPM release binary into a lightweight `.app`.
-- Files in [`tools/`](/Users/seinel/Projects/mac_mouse_cursor/tools) are developer utilities and are not included in the app bundle.
-- It is not the App Store packaging path.
+## Support
 
-## App Store Build
-
-Open `CapeForge.xcodeproj` in Xcode, then archive the `CapeForge` target.
-
-- App Sandbox is enabled.
-- The app is configured to access only folders and save locations chosen by the user.
-- For Mac App Store submission, use the Xcode Organizer archive flow.
-
-## GitHub Pages
-
-This repository is already structured for GitHub Pages with the `/docs` folder.
-
-Suggested public URLs:
-
-- Support URL: `https://kwd421.github.io/mac_mouse_cursor/`
-- Privacy Policy URL: `https://kwd421.github.io/mac_mouse_cursor/privacy.html`
-- Korean Support URL: `https://kwd421.github.io/mac_mouse_cursor/ko/`
-- Korean Privacy Policy URL: `https://kwd421.github.io/mac_mouse_cursor/ko/privacy.html`
-
-GitHub Pages setup:
-
-1. Push the repository to GitHub.
-2. Open the repository settings.
-3. Go to `Pages`.
-4. Set the source to `Deploy from a branch`.
-5. Choose the `main` branch and the `/docs` folder.
-6. Save and wait for the site to publish.
-
-Support contact:
-
-- `tonistark@naver.com`
-
-## Notes
-
-Both the runtime path and the packaging path are Swift app flows.
+- Support URL: [https://kwd421.github.io/mac_mouse_cursor/](https://kwd421.github.io/mac_mouse_cursor/)
+- Privacy Policy: [https://kwd421.github.io/mac_mouse_cursor/privacy.html](https://kwd421.github.io/mac_mouse_cursor/privacy.html)
+- Contact: `tonistark@naver.com`
