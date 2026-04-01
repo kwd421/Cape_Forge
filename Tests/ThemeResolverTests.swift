@@ -959,7 +959,7 @@ struct CapeExporterTests {
 
     @MainActor
     @Test
-    func capsBusyFramesAtTwentyFourWhileKeepingWaitAnimated() throws {
+    func leavesShortAnimatedCursorsUnchanged() throws {
         let firstImage = NSImage(size: NSSize(width: 16, height: 16))
         firstImage.lockFocus()
         NSColor.white.setFill()
@@ -990,9 +990,9 @@ struct CapeExporterTests {
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         try CapeExporter().exportCape(
-            name: "Busy Static",
+            name: "Short Animated",
             author: "Tester",
-            identifier: "local.test.busy-static",
+            identifier: "local.test.short-animated",
             theme: theme,
             to: tempURL
         )
@@ -1009,7 +1009,7 @@ struct CapeExporterTests {
 
     @MainActor
     @Test
-    func truncatesBusyAnimationWhenItExceedsTwentyFourFrames() throws {
+    func truncatesLongAnimatedCursorWhenItExceedsTwentyFourFrames() throws {
         let image = NSImage(size: NSSize(width: 16, height: 16))
         image.lockFocus()
         NSColor.white.setFill()
@@ -1025,16 +1025,16 @@ struct CapeExporterTests {
             canvasSize: CGSize(width: 16, height: 16)
         )
         let theme = CursorTheme(animations: [
-            .busy: animation
+            .working: animation
         ])
 
         let tempURL = temporaryCapeURL()
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         try CapeExporter().exportCape(
-            name: "Busy Capped",
+            name: "Animated Capped",
             author: "Tester",
-            identifier: "local.test.busy-capped",
+            identifier: "local.test.animated-capped",
             theme: theme,
             to: tempURL
         )
@@ -1042,14 +1042,14 @@ struct CapeExporterTests {
         let data = try Data(contentsOf: tempURL)
         let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
         let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
-        let busy = cursors["com.apple.cursor.4"] as? [String: Any]
+        let wait = cursors["com.apple.coregraphics.Wait"] as? [String: Any]
 
-        #expect(busy?["FrameCount"] as? Int == 24)
+        #expect(wait?["FrameCount"] as? Int == 24)
     }
 
     @MainActor
     @Test
-    func downsampledBusyPreservesOverallDuration() throws {
+    func downsampledAnimatedCursorPreservesOverallDuration() throws {
         func solidImage(_ color: NSColor) -> NSImage {
             let image = NSImage(size: NSSize(width: 16, height: 16))
             image.lockFocus()
@@ -1069,15 +1069,15 @@ struct CapeExporterTests {
             hotspot: CGPoint(x: 1, y: 1),
             canvasSize: CGSize(width: 16, height: 16)
         )
-        let theme = CursorTheme(animations: [.busy: animation])
+        let theme = CursorTheme(animations: [.working: animation])
 
         let tempURL = temporaryCapeURL()
         defer { try? FileManager.default.removeItem(at: tempURL) }
 
         try CapeExporter().exportCape(
-            name: "Busy Downsampled",
+            name: "Animated Downsampled",
             author: "Tester",
-            identifier: "local.test.busy-downsampled",
+            identifier: "local.test.animated-downsampled",
             theme: theme,
             to: tempURL
         )
@@ -1085,10 +1085,10 @@ struct CapeExporterTests {
         let data = try Data(contentsOf: tempURL)
         let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
         let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
-        let busy = cursors["com.apple.cursor.4"] as? [String: Any]
+        let wait = cursors["com.apple.coregraphics.Wait"] as? [String: Any]
 
-        let frameCount = busy?["FrameCount"] as? Int ?? 0
-        let frameDuration = busy?["FrameDuration"] as? Double ?? 0
+        let frameCount = wait?["FrameCount"] as? Int ?? 0
+        let frameDuration = wait?["FrameDuration"] as? Double ?? 0
         #expect(frameCount == 24)
         #expect(abs((Double(frameCount) * frameDuration) - 1.8) < 0.001)
     }

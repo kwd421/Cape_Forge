@@ -71,7 +71,7 @@ struct CapeExporter {
         for role in CursorRole.allCases {
             guard let animation = theme[role], let identifiers = roleIdentifiers[role] else { continue }
             for identifier in identifiers {
-                let exportAnimation = animationForExport(role: role, identifier: identifier, animation: animation)
+                let exportAnimation = animationForExport(animation)
                 let dictionary = try cursorDictionary(for: exportAnimation, sizeMultiplier: sizeMultiplier)
                 cursors[identifier] = dictionary
             }
@@ -82,8 +82,9 @@ struct CapeExporter {
                 let identifiers = supplementalIdentifiers[role],
                 let animation = theme[role]
             else { continue }
-            let dictionary = try cursorDictionary(for: animation, sizeMultiplier: sizeMultiplier)
             for identifier in identifiers {
+                let exportAnimation = animationForExport(animation)
+                let dictionary = try cursorDictionary(for: exportAnimation, sizeMultiplier: sizeMultiplier)
                 cursors[identifier] = dictionary
             }
         }
@@ -108,11 +109,11 @@ struct CapeExporter {
         try data.write(to: url, options: .atomic)
     }
 
-    private func animationForExport(role: CursorRole, identifier: String, animation: CursorAnimation) -> CursorAnimation {
-        // Mousecape can import animated Busy cursors, but very long `com.apple.cursor.4`
-        // animations can fall back to the red dot when the theme is applied.
-        // Keep Wait fully animated, but cap Busy to a shorter sequence.
-        guard role == .busy, identifier == "com.apple.cursor.4", animation.frames.count > 24 else {
+    private func animationForExport(_ animation: CursorAnimation) -> CursorAnimation {
+        // Mousecape can import animated cursors, but long sequences may fall
+        // back to the red dot when a theme is applied. Cap all animated exports
+        // to a shorter, evenly sampled sequence.
+        guard animation.frames.count > 24 else {
             return animation
         }
 
