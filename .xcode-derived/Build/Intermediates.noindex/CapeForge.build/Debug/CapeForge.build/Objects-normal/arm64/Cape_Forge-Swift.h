@@ -369,9 +369,11 @@ extern "C" {
 #if defined(__OBJC__)
 
 @class NSNotification;
+@class NSApplication;
 SWIFT_CLASS("_TtC10Cape_Forge11AppDelegate")
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 - (void)applicationDidFinishLaunching:(NSNotification * _Nonnull)notification;
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication * _Nonnull)sender SWIFT_WARN_UNUSED_RESULT;
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end
 

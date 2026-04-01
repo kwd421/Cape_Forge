@@ -64,52 +64,67 @@ struct SettingsView: View {
     @ObservedObject private var localization = LocalizationController.shared
     @State private var selection: SidebarCursorItem? = .primary(.arrow)
     @State private var isSupplementalExpanded = false
+    @State private var keyMonitor: Any?
+    @State private var hasShownAdditionalCursorHintThisLaunch = false
 
     var body: some View {
         let _ = localization.selectedLanguage
         VStack(spacing: 0) {
             NavigationSplitView {
-                List(selection: $selection) {
-                    ForEach(CursorRole.allCases) { role in
-                        if let assignment = controller.assignment(for: role) {
-                            Button {
-                                selection = .primary(role)
-                            } label: {
+                ScrollViewReader { proxy in
+                    List(selection: $selection) {
+                        ForEach(CursorRole.allCases) { role in
+                            if let assignment = controller.assignment(for: role) {
                                 CursorRoleRow(assignment: assignment)
+                                    .tag(SidebarCursorItem.primary(role))
+                                    .id(SidebarCursorItem.primary(role))
+                                    .contentShape(Rectangle())
+                            }
+                        }
+
+                        Section {
+                            Button {
+                                isSupplementalExpanded.toggle()
+                                if isSupplementalExpanded && !hasShownAdditionalCursorHintThisLaunch {
+                                    hasShownAdditionalCursorHintThisLaunch = true
+                                    controller.activeAlert = UserFacingAlert(
+                                        title: Localized.string("app.additionalCursors"),
+                                        message: Localized.string("app.additionalCursorHint")
+                                    )
+                                }
+                                if !isSupplementalExpanded {
+                                    if case .supplemental = selection {
+                                        selection = .primary(.arrow)
+                                    }
+                                }
+                            } label: {
+                                AdditionalCursorsHeader(isExpanded: isSupplementalExpanded)
                             }
                             .buttonStyle(.plain)
-                            .tag(SidebarCursorItem.primary(role))
+                            .focusable(false)
+
+                            if isSupplementalExpanded {
+                                ForEach(SupplementalCursorRole.allCases) { role in
+                                    SupplementalCursorRoleRow(assignment: controller.supplementalAssignment(for: role))
+                                        .contentShape(Rectangle())
+                                        .tag(SidebarCursorItem.supplemental(role))
+                                        .id(SidebarCursorItem.supplemental(role))
+                                }
+                            }
                         }
                     }
-
-                    Section {
-                        Button {
-                            isSupplementalExpanded.toggle()
-                            if !isSupplementalExpanded {
-                                if case .supplemental = selection {
-                                    selection = .primary(.arrow)
-                                }
-                            }
-                        } label: {
-                            AdditionalCursorsHeader(isExpanded: isSupplementalExpanded)
-                        }
-                        .buttonStyle(.plain)
-
-                        if isSupplementalExpanded {
-                            ForEach(SupplementalCursorRole.allCases) { role in
-                                Button {
-                                    selection = .supplemental(role)
-                                } label: {
-                                    SupplementalCursorRoleRow(assignment: controller.supplementalAssignment(for: role))
-                                }
-                                .buttonStyle(.plain)
-                                .tag(SidebarCursorItem.supplemental(role))
-                            }
+                    .frame(minWidth: 230)
+                    .navigationTitle(Localized.string("app.cursors"))
+                    .onSelectionChange(of: selection) { newValue in
+                        guard let newValue else { return }
+                        scrollSidebar(to: newValue, proxy: proxy)
+                    }
+                    .onAppear {
+                        if let selection {
+                            scrollSidebar(to: selection, proxy: proxy)
                         }
                     }
                 }
-                .frame(minWidth: 230)
-                .navigationTitle(Localized.string("app.cursors"))
             } detail: {
                 switch selection {
                 case .primary(let role):
@@ -140,6 +155,12 @@ struct SettingsView: View {
         .onDrop(of: [UTType.fileURL], isTargeted: nil) { providers in
             handleDrop(providers: providers)
         }
+        .onAppear {
+            installKeyMonitorIfNeeded()
+        }
+        .onDisappear {
+            removeKeyMonitor()
+        }
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
@@ -161,6 +182,101 @@ struct SettingsView: View {
             }
         }
         return true
+    }
+
+    private func handleSidebarMove(_ direction: MoveCommandDirection) {
+        let items = visibleSidebarItems
+        guard !items.isEmpty else { return }
+
+        switch direction {
+        case .down:
+            guard let selection else {
+                self.selection = items.first
+                return
+            }
+            guard let index = items.firstIndex(of: selection) else {
+                self.selection = items.first
+                return
+            }
+            self.selection = items[(index + 1) % items.count]
+        case .up:
+            guard let selection else {
+                self.selection = items.last
+                return
+            }
+            guard let index = items.firstIndex(of: selection) else {
+                self.selection = items.last
+                return
+            }
+            self.selection = items[(index - 1 + items.count) % items.count]
+        default:
+            break
+        }
+    }
+
+    private var visibleSidebarItems: [SidebarCursorItem] {
+        let primaryItems = CursorRole.allCases.map(SidebarCursorItem.primary)
+        guard isSupplementalExpanded else { return primaryItems }
+        return primaryItems + SupplementalCursorRole.allCases.map(SidebarCursorItem.supplemental)
+    }
+
+    private func scrollSidebar(to item: SidebarCursorItem, proxy: ScrollViewProxy) {
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.12)) {
+                proxy.scrollTo(item, anchor: .center)
+            }
+        }
+    }
+
+    private func installKeyMonitorIfNeeded() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard shouldHandleSidebarArrowKey(event) else { return event }
+
+            switch event.keyCode {
+            case 125:
+                handleSidebarMove(.down)
+                return nil
+            case 126:
+                handleSidebarMove(.up)
+                return nil
+            default:
+                return event
+            }
+        }
+    }
+
+    private func removeKeyMonitor() {
+        guard let keyMonitor else { return }
+        NSEvent.removeMonitor(keyMonitor)
+        self.keyMonitor = nil
+    }
+
+    private func shouldHandleSidebarArrowKey(_ event: NSEvent) -> Bool {
+        guard event.keyCode == 125 || event.keyCode == 126 else { return false }
+        guard NSApp.keyWindow != nil else { return false }
+        if NSApp.keyWindow?.firstResponder is NSTextView {
+            return false
+        }
+        return true
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func onSelectionChange<Value: Equatable>(
+        of value: Value,
+        perform action: @escaping (Value) -> Void
+    ) -> some View {
+        if #available(macOS 14.0, *) {
+            self.onChange(of: value) { _, newValue in
+                action(newValue)
+            }
+        } else {
+            self.onChange(of: value) { newValue in
+                action(newValue)
+            }
+        }
     }
 }
 
@@ -267,6 +383,7 @@ struct ExportSection: View {
             EmptyView()
         }
     }
+
 }
 
 struct ExportScaleControl: View {
@@ -370,21 +487,21 @@ struct SupplementalCursorRoleRow: View {
     }
 
     private var statusSymbolName: String {
-        if !assignment.isResolved { return "exclamationmark.triangle.fill" }
+        if !assignment.isResolved { return "circle.dashed" }
         if assignment.isOverride { return "slider.horizontal.3" }
         return "checkmark.circle.fill"
     }
 
     private var statusColor: Color {
-        if !assignment.isResolved { return .orange }
+        if !assignment.isResolved { return .secondary }
         if assignment.isOverride { return .accentColor }
         return .secondary
     }
 
     private var subtitle: String {
-        if !assignment.isResolved { return Localized.string("app.automaticMatchFailed") }
+        if !assignment.isResolved { return Localized.string("app.noCursorLoaded") }
         if assignment.isOverride { return assignment.sourceURL?.lastPathComponent ?? Localized.string("app.manualOverride") }
-        return Localized.string("app.additionalCursorUses", assignment.mappedRole.displayName)
+        return Localized.string("app.noCursorLoaded")
     }
 }
 
@@ -403,7 +520,20 @@ struct CursorRoleDetailView: View {
                     PreviewGroup(
                         subtitle: assignment.sourceURL?.lastPathComponent ?? Localized.string("app.automaticallyMatchedFromFolder"),
                         animation: appliedPreview,
-                        exportSizeMultiplier: controller.exportSizeMultiplier
+                        exportSizeMultiplier: controller.exportSizeMultiplier,
+                        largePreviewScale: 1.0
+                    ) {
+                        Button(Localized.string("app.changeCursorFile")) {
+                            controller.chooseOverride(for: assignment.role)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else if let startupPreview = controller.startupPreview(for: assignment.role) {
+                    PreviewGroup(
+                        subtitle: Localized.string("app.currentSystemCursor"),
+                        animation: startupPreview,
+                        exportSizeMultiplier: controller.exportSizeMultiplier,
+                        largePreviewScale: largePreviewScale
                     ) {
                         Button(Localized.string("app.changeCursorFile")) {
                             controller.chooseOverride(for: assignment.role)
@@ -456,6 +586,15 @@ struct CursorRoleDetailView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
+
+    private var largePreviewScale: CGFloat {
+        switch assignment.role {
+        case .diagonalResizeNWSE, .diagonalResizeNESW:
+            return 1.6
+        default:
+            return 1.0
+        }
+    }
 }
 
 struct SupplementalCursorRoleDetailView: View {
@@ -473,6 +612,18 @@ struct SupplementalCursorRoleDetailView: View {
                     PreviewGroup(
                         subtitle: assignment.sourceURL?.lastPathComponent ?? Localized.string("app.automaticallyMatchedFromFolder"),
                         animation: appliedPreview,
+                        exportSizeMultiplier: controller.exportSizeMultiplier,
+                        largePreviewScale: 1.0
+                    ) {
+                        Button(Localized.string("app.changeCursorFile")) {
+                            controller.chooseOverride(for: assignment.role)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else if let startupPreview = controller.startupPreview(for: assignment.role) {
+                    PreviewGroup(
+                        subtitle: Localized.string("app.currentSystemCursor"),
+                        animation: startupPreview,
                         exportSizeMultiplier: controller.exportSizeMultiplier
                     ) {
                         Button(Localized.string("app.changeCursorFile")) {
@@ -508,15 +659,9 @@ struct SupplementalCursorRoleDetailView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         DetailItem(title: Localized.string("app.currentSource")) {
-                            Text(assignment.sourceURL?.path ?? Localized.string("app.automaticallyMatchedInsideSelectedFolder"))
+                            Text(assignment.sourceURL?.path ?? Localized.string("app.noCursorLoaded"))
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
-                        }
-                        if assignment.isOverride {
-                            DetailItem(title: Localized.string("app.status")) {
-                                Text(Localized.string("app.manualOverride"))
-                                    .foregroundStyle(Color.accentColor)
-                            }
                         }
                     }
                     .padding(.horizontal, LayoutMetrics.cardHorizontalPadding)
@@ -568,6 +713,7 @@ struct PreviewGroup<TrailingAction: View>: View {
     let subtitle: String
     let animation: CursorAnimation
     let exportSizeMultiplier: Double
+    let largePreviewScale: CGFloat
     let trailingAction: TrailingAction
     @ObservedObject private var localization = LocalizationController.shared
 
@@ -575,11 +721,13 @@ struct PreviewGroup<TrailingAction: View>: View {
         subtitle: String,
         animation: CursorAnimation,
         exportSizeMultiplier: Double,
+        largePreviewScale: CGFloat = 1.0,
         @ViewBuilder trailingAction: () -> TrailingAction = { EmptyView() }
     ) {
         self.subtitle = subtitle
         self.animation = animation
         self.exportSizeMultiplier = exportSizeMultiplier
+        self.largePreviewScale = largePreviewScale
         self.trailingAction = trailingAction()
     }
 
@@ -600,7 +748,7 @@ struct PreviewGroup<TrailingAction: View>: View {
                         Text(Localized.string("preview.large"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        CursorPreviewView(animation: animation)
+                        CursorPreviewView(animation: animation, previewScale: largePreviewScale)
                             .frame(maxWidth: .infinity)
                             .frame(height: 220)
                             .background(Color(nsColor: .controlBackgroundColor))
@@ -723,6 +871,7 @@ struct EmptyPreviewPane: View {
 
 struct CursorPreviewView: View {
     let animation: CursorAnimation
+    let previewScale: CGFloat
 
     var body: some View {
         TimelineView(.animation) { context in
@@ -731,6 +880,7 @@ struct CursorPreviewView: View {
                 .resizable()
                 .interpolation(.none)
                 .scaledToFit()
+                .scaleEffect(previewScale)
                 .padding(24)
         }
     }

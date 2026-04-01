@@ -521,23 +521,30 @@ final class CursorController: ObservableObject {
         assignments.first(where: { $0.role == role })
     }
 
+    func startupPreview(for role: CursorRole) -> CursorAnimation? {
+        switch role {
+        case .diagonalResizeNWSE:
+            return bundledDiagonalResizeAnimation(degrees: -45)
+        case .diagonalResizeNESW:
+            return bundledDiagonalResizeAnimation(degrees: 45)
+        default:
+            return bundledDefaultCursorAnimation(for: role)
+        }
+    }
+
+    func startupPreview(for role: SupplementalCursorRole) -> CursorAnimation? {
+        nil
+    }
+
     func supplementalAssignment(for role: SupplementalCursorRole) -> SupplementalCursorAssignment {
-        let baseRole = role.mappedPrimaryRole
-        let baseAssignment = assignment(for: baseRole)
         let overrideURL = supplementalOverrideURLs[role]
-        let inheritedURL = baseAssignment?.sourceURL
-        let isOverride = {
-            guard let overrideURL else { return false }
-            guard let inheritedURL else { return true }
-            return overrideURL.standardizedFileURL != inheritedURL.standardizedFileURL
-        }()
         return SupplementalCursorAssignment(
             role: role,
-            mappedRole: baseRole,
-            appliedPreview: currentTheme[role] ?? baseAssignment?.appliedPreview,
-            sourceURL: isOverride ? overrideURL : inheritedURL,
-            isOverride: isOverride,
-            isResolved: (currentTheme[role] ?? baseAssignment?.appliedPreview) != nil
+            mappedRole: role.mappedPrimaryRole,
+            appliedPreview: currentTheme[role],
+            sourceURL: overrideURL,
+            isOverride: overrideURL != nil,
+            isResolved: currentTheme[role] != nil
         )
     }
 
@@ -581,23 +588,11 @@ final class CursorController: ObservableObject {
         for role in SupplementalCursorRole.allCases {
             if let override = supplementalOverrideURLs[role] {
                 if FileManager.default.fileExists(atPath: override.path) {
-                    if let inheritedURL = effectiveSupplementalInheritedSourceURL(for: role, resolvedFiles: resolvedFiles),
-                       inheritedURL.standardizedFileURL == override.standardizedFileURL,
-                       let baseAnimation = animations[role.mappedPrimaryRole] {
-                        releaseSecurityScopedAccess(for: [override])
-                        supplementalOverrideURLs.removeValue(forKey: role)
-                        supplementalAnimations[role] = baseAnimation
-                    } else {
-                        supplementalAnimations[role] = try parsedAnimation(for: override)
-                    }
-                    continue
+                    supplementalAnimations[role] = try parsedAnimation(for: override)
                 } else {
                     releaseSecurityScopedAccess(for: [override])
                     supplementalOverrideURLs.removeValue(forKey: role)
                 }
-            }
-            if let baseAnimation = animations[role.mappedPrimaryRole] {
-                supplementalAnimations[role] = baseAnimation
             }
         }
 
@@ -663,17 +658,6 @@ final class CursorController: ObservableObject {
         ].forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
-    private func effectiveSupplementalInheritedSourceURL(
-        for role: SupplementalCursorRole,
-        resolvedFiles: [CursorRole: URL]? = nil
-    ) -> URL? {
-        let mappedRole = role.mappedPrimaryRole
-        if let primaryOverride = overrideURLs[mappedRole], FileManager.default.fileExists(atPath: primaryOverride.path) {
-            return primaryOverride
-        }
-        return resolvedFiles?[mappedRole]
-    }
-
     private func applyOverride(at url: URL, for role: CursorRole) {
         let ext = url.pathExtension.lowercased()
         guard ext == "ani" || ext == "cur" else {
@@ -690,7 +674,6 @@ final class CursorController: ObservableObject {
     }
 
     private func applyOverride(at url: URL, for role: SupplementalCursorRole) {
-        let standardizedURL = url.standardizedFileURL
         let ext = url.pathExtension.lowercased()
         guard ext == "ani" || ext == "cur" else {
             setStatus(.supportedFiles)
@@ -701,13 +684,7 @@ final class CursorController: ObservableObject {
             releaseSecurityScopedAccess(for: [previousURL])
         }
         retainSecurityScopedAccess(to: url)
-        if let inheritedURL = effectiveSupplementalInheritedSourceURL(for: role),
-           inheritedURL.standardizedFileURL == standardizedURL {
-            releaseSecurityScopedAccess(for: [url])
-            supplementalOverrideURLs.removeValue(forKey: role)
-        } else {
-            supplementalOverrideURLs[role] = url
-        }
+        supplementalOverrideURLs[role] = url
         reload()
     }
 
@@ -799,6 +776,303 @@ final class CursorController: ObservableObject {
         case .loadFailure(let message):
             return Localized.string("status.loadFailure", message)
         }
+    }
+
+    private func bundledDefaultCursorAnimation(for role: CursorRole) -> CursorAnimation? {
+        switch role {
+        case .arrow:
+            return bundledCursorAnimation(
+                named: "arrow",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 4.5, y: 4)
+            )
+        case .text:
+            return bundledCursorAnimation(
+                named: "text",
+                logicalCanvasSize: CGSize(width: 22, height: 23),
+                hotSpot: CGPoint(x: 11.5, y: 11)
+            )
+        case .link:
+            return bundledCursorAnimation(
+                named: "link",
+                logicalCanvasSize: CGSize(width: 32, height: 32),
+                hotSpot: CGPoint(x: 13, y: 8)
+            )
+        case .location:
+            return bundledCursorAnimation(
+                named: "drag-copy",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 5, y: 5)
+            )
+        case .precision:
+            return bundledCursorAnimation(
+                named: "precision",
+                logicalCanvasSize: CGSize(width: 24, height: 24),
+                hotSpot: CGPoint(x: 11, y: 11)
+            )
+        case .move:
+            return bundledCursorAnimation(
+                named: "move-open",
+                logicalCanvasSize: CGSize(width: 32, height: 32),
+                hotSpot: CGPoint(x: 16, y: 17)
+            )
+        case .unavailable:
+            return bundledCursorAnimation(
+                named: "unavailable",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 5, y: 5)
+            )
+        case .busy, .working:
+            return bundledCursorAnimation(
+                named: "wait",
+                logicalCanvasSize: CGSize(width: 16, height: 16),
+                hotSpot: CGPoint(x: 8, y: 8)
+            )
+        case .help:
+            return bundledCursorAnimation(
+                named: "arrow",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 4.5, y: 4)
+            )
+        case .handwriting:
+            return bundledCursorAnimation(
+                named: "arrow",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 4.5, y: 4)
+            )
+        case .person, .alternate:
+            return bundledCursorAnimation(
+                named: "arrow",
+                logicalCanvasSize: CGSize(width: 28, height: 40),
+                hotSpot: CGPoint(x: 4.5, y: 4)
+            )
+        case .verticalResize:
+            return bundledCursorAnimation(
+                named: "resize-vertical",
+                logicalCanvasSize: CGSize(width: 24, height: 28),
+                hotSpot: CGPoint(x: 12, y: 14)
+            )
+        case .horizontalResize:
+            return bundledCursorAnimation(
+                named: "resize-horizontal",
+                logicalCanvasSize: CGSize(width: 30, height: 24),
+                hotSpot: CGPoint(x: 15, y: 12)
+            )
+        case .diagonalResizeNWSE, .diagonalResizeNESW:
+            return nil
+        }
+    }
+
+    private func bundledCursorAnimation(
+        named name: String,
+        logicalCanvasSize: CGSize,
+        hotSpot: CGPoint
+    ) -> CursorAnimation? {
+        #if SWIFT_PACKAGE
+        let imageURL = Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "DefaultCursors")
+            ?? Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "DefaultCursors")
+            ?? Bundle.main.url(forResource: name, withExtension: "png")
+        #else
+        let imageURL = Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "DefaultCursors")
+            ?? Bundle.main.url(forResource: name, withExtension: "png")
+        #endif
+
+        guard let imageURL,
+              let image = NSImage(contentsOf: imageURL),
+              image.size.width > 0,
+              image.size.height > 0 else {
+            return nil
+        }
+
+        return CursorAnimation(
+            frames: [CursorFrame(image: image, delay: 0.1)],
+            hotspot: hotSpot,
+            canvasSize: logicalCanvasSize
+        )
+    }
+
+    private func bundledDiagonalResizeAnimation(degrees: CGFloat) -> CursorAnimation? {
+        guard let baseAnimation = bundledCursorAnimation(
+            named: "resize-vertical",
+            logicalCanvasSize: CGSize(width: 24, height: 28),
+            hotSpot: CGPoint(x: 12, y: 14)
+        ),
+        let baseFrame = baseAnimation.frames.first else {
+            return nil
+        }
+
+        let rotatedImage = rotateImage(baseFrame.image, byDegrees: degrees)
+        let rotatedHotSpot = rotateHotspot(
+            baseAnimation.hotspot,
+            in: baseAnimation.canvasSize,
+            byDegrees: degrees
+        )
+        let rotatedLogicalSize = rotatedBoundingSize(for: baseAnimation.canvasSize, byDegrees: degrees)
+
+        return CursorAnimation(
+            frames: [CursorFrame(image: rotatedImage, delay: baseFrame.delay)],
+            hotspot: rotatedHotSpot,
+            canvasSize: rotatedLogicalSize
+        )
+    }
+
+    private func rotateImage(_ image: NSImage, byDegrees degrees: CGFloat) -> NSImage {
+        let radians = degrees * .pi / 180
+        let newSize = NSSize(
+            width: abs(cos(radians)) * image.size.width + abs(sin(radians)) * image.size.height,
+            height: abs(sin(radians)) * image.size.width + abs(cos(radians)) * image.size.height
+        )
+
+        let canvas = NSImage(size: newSize)
+        canvas.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .none
+
+        let transform = NSAffineTransform()
+        transform.translateX(by: newSize.width / 2, yBy: newSize.height / 2)
+        transform.rotate(byDegrees: degrees)
+        transform.translateX(by: -image.size.width / 2, yBy: -image.size.height / 2)
+        transform.concat()
+
+        image.draw(at: .zero, from: .zero, operation: .sourceOver, fraction: 1.0)
+        canvas.unlockFocus()
+        return canvas
+    }
+
+    private func rotateHotspot(_ hotspot: CGPoint, in size: CGSize, byDegrees degrees: CGFloat) -> CGPoint {
+        let radians = degrees * .pi / 180
+        let newSize = rotatedBoundingSize(for: size, byDegrees: degrees)
+
+        let translated = CGPoint(
+            x: hotspot.x - size.width / 2,
+            y: hotspot.y - size.height / 2
+        )
+        let rotated = CGPoint(
+            x: translated.x * cos(radians) - translated.y * sin(radians),
+            y: translated.x * sin(radians) + translated.y * cos(radians)
+        )
+
+        return CGPoint(
+            x: rotated.x + newSize.width / 2,
+            y: rotated.y + newSize.height / 2
+        )
+    }
+
+    private func rotatedBoundingSize(for size: CGSize, byDegrees degrees: CGFloat) -> CGSize {
+        let radians = degrees * .pi / 180
+        return CGSize(
+            width: abs(cos(radians)) * size.width + abs(sin(radians)) * size.height,
+            height: abs(sin(radians)) * size.width + abs(cos(radians)) * size.height
+        )
+    }
+
+    private func officialCursor(for role: SupplementalCursorRole) -> NSCursor? {
+        switch role {
+        case .dragCopy:
+            return .dragCopy
+        case .dragLink:
+            return .dragLink
+        case .contextualMenu, .contextMenuLegacy:
+            return .contextualMenu
+        case .disappearingItem:
+            return .disappearingItem
+        case .closeHand:
+            return .closedHand
+        case .openHand:
+            return .openHand
+        case .resizeLeft:
+            return .resizeLeft
+        case .resizeRight:
+            return .resizeRight
+        case .resizeUp:
+            return .resizeUp
+        case .resizeDown:
+            return .resizeDown
+        case .verticalIBeam:
+            return .iBeamCursorForVerticalLayout
+        case .zoomIn:
+            if #available(macOS 15.0, *) {
+                return .zoomIn
+            }
+            return .crosshair
+        case .zoomOut:
+            if #available(macOS 15.0, *) {
+                return .zoomOut
+            }
+            return .crosshair
+        case .iBeamHorizontal:
+            return .iBeam
+        case .empty, .poof:
+            return .operationNotAllowed
+        case .camera, .camera2, .countingUp, .countingDown, .countingUpDown, .resizeSquare:
+            return nil
+        }
+    }
+
+    private func cursorAnimation(for cursor: NSCursor) -> CursorAnimation? {
+        let image = cursor.image
+        guard image.size.width > 0, image.size.height > 0 else { return nil }
+        return CursorAnimation(
+            frames: [CursorFrame(image: image, delay: 0.2)],
+            hotspot: cursor.hotSpot,
+            canvasSize: image.size
+        )
+    }
+
+    private func rotatedCursorAnimation(for cursor: NSCursor, degrees: CGFloat) -> CursorAnimation? {
+        let image = cursor.image
+        guard image.size.width > 0, image.size.height > 0,
+              let rotatedImage = rotatedImage(image, degrees: degrees) else {
+            return nil
+        }
+
+        let originalCenter = CGPoint(x: image.size.width / 2, y: image.size.height / 2)
+        let rotatedCenter = CGPoint(x: rotatedImage.size.width / 2, y: rotatedImage.size.height / 2)
+        let translatedHotspot = CGPoint(
+            x: cursor.hotSpot.x - originalCenter.x,
+            y: cursor.hotSpot.y - originalCenter.y
+        )
+        let radians = degrees * .pi / 180
+        let rotatedHotspot = CGPoint(
+            x: translatedHotspot.x * cos(radians) - translatedHotspot.y * sin(radians) + rotatedCenter.x,
+            y: translatedHotspot.x * sin(radians) + translatedHotspot.y * cos(radians) + rotatedCenter.y
+        )
+
+        return CursorAnimation(
+            frames: [CursorFrame(image: rotatedImage, delay: 0.2)],
+            hotspot: rotatedHotspot,
+            canvasSize: rotatedImage.size
+        )
+    }
+
+    private func rotatedImage(_ image: NSImage, degrees: CGFloat) -> NSImage? {
+        let radians = degrees * .pi / 180
+        let srcRect = NSRect(origin: .zero, size: image.size)
+        let rotatedBounds = srcRect.applying(CGAffineTransform(rotationAngle: radians)).integral
+        let outputSize = NSSize(width: abs(rotatedBounds.width), height: abs(rotatedBounds.height))
+
+        let rotated = NSImage(size: outputSize)
+        rotated.lockFocus()
+        guard let context = NSGraphicsContext.current?.cgContext else {
+            rotated.unlockFocus()
+            return nil
+        }
+
+        context.interpolationQuality = .none
+        context.translateBy(x: outputSize.width / 2, y: outputSize.height / 2)
+        context.rotate(by: radians)
+        image.draw(
+            in: NSRect(
+                x: -image.size.width / 2,
+                y: -image.size.height / 2,
+                width: image.size.width,
+                height: image.size.height
+            ),
+            from: srcRect,
+            operation: .sourceOver,
+            fraction: 1.0
+        )
+        rotated.unlockFocus()
+        return rotated
     }
 
 }

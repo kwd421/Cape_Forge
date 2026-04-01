@@ -79,7 +79,7 @@ struct CapeExporter {
         for role in SupplementalCursorRole.allCases {
             guard
                 let identifiers = supplementalIdentifiers[role],
-                let animation = theme[role] ?? theme[role.mappedPrimaryRole]
+                let animation = theme[role]
             else { continue }
             let dictionary = try cursorDictionary(for: animation, sizeMultiplier: sizeMultiplier)
             for identifier in identifiers {

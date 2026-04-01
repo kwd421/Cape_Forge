@@ -564,7 +564,7 @@ struct CapeExporterTests {
 
     @MainActor
     @Test
-    func exportsSupplementalMousecapeIdentifiersUsingMappedPrimaryRoles() throws {
+    func leavesSupplementalMousecapeIdentifiersUnsetByDefault() throws {
         let image = NSImage(size: NSSize(width: 16, height: 16))
         image.lockFocus()
         NSColor.white.setFill()
@@ -605,29 +605,29 @@ struct CapeExporterTests {
         let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
         let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
 
-        #expect(cursors["com.apple.coregraphics.ArrowCtx"] != nil)
-        #expect(cursors["com.apple.cursor.24"] != nil)
-        #expect(cursors["com.apple.coregraphics.CopyDrag"] != nil)
-        #expect(cursors["com.apple.coregraphics.LinkDrag"] != nil)
-        #expect(cursors["com.apple.coregraphics.DisappearingItem"] != nil)
-        #expect(cursors["com.apple.coregraphics.Empty"] != nil)
-        #expect(cursors["com.apple.cursor.10"] != nil)
-        #expect(cursors["com.apple.cursor.9"] != nil)
-        #expect(cursors["com.apple.cursor.26"] != nil)
-        #expect(cursors["com.apple.cursor.14"] != nil)
-        #expect(cursors["com.apple.cursor.15"] != nil)
-        #expect(cursors["com.apple.cursor.16"] != nil)
-        #expect(cursors["com.apple.cursor.25"] != nil)
-        #expect(cursors["com.apple.cursor.39"] != nil)
-        #expect(cursors["com.apple.coregraphics.ResizeUp"] != nil)
-        #expect(cursors["com.apple.coregraphics.ResizeDown"] != nil)
-        #expect(cursors["com.apple.coregraphics.ResizeLeft"] != nil)
-        #expect(cursors["com.apple.coregraphics.ResizeRight"] != nil)
-        #expect(cursors["com.apple.coregraphics.IBeamForVerticalLayout"] != nil)
-        #expect(cursors["com.apple.cursor.11"] != nil)
-        #expect(cursors["com.apple.cursor.12"] != nil)
-        #expect(cursors["com.apple.cursor.42"] != nil)
-        #expect(cursors["com.apple.cursor.43"] != nil)
+        #expect(cursors["com.apple.coregraphics.ArrowCtx"] == nil)
+        #expect(cursors["com.apple.cursor.24"] == nil)
+        #expect(cursors["com.apple.coregraphics.CopyDrag"] == nil)
+        #expect(cursors["com.apple.coregraphics.LinkDrag"] == nil)
+        #expect(cursors["com.apple.coregraphics.DisappearingItem"] == nil)
+        #expect(cursors["com.apple.coregraphics.Empty"] == nil)
+        #expect(cursors["com.apple.cursor.10"] == nil)
+        #expect(cursors["com.apple.cursor.9"] == nil)
+        #expect(cursors["com.apple.cursor.26"] == nil)
+        #expect(cursors["com.apple.cursor.14"] == nil)
+        #expect(cursors["com.apple.cursor.15"] == nil)
+        #expect(cursors["com.apple.cursor.16"] == nil)
+        #expect(cursors["com.apple.cursor.25"] == nil)
+        #expect(cursors["com.apple.cursor.39"] == nil)
+        #expect(cursors["com.apple.coregraphics.ResizeUp"] == nil)
+        #expect(cursors["com.apple.coregraphics.ResizeDown"] == nil)
+        #expect(cursors["com.apple.coregraphics.ResizeLeft"] == nil)
+        #expect(cursors["com.apple.coregraphics.ResizeRight"] == nil)
+        #expect(cursors["com.apple.coregraphics.IBeamForVerticalLayout"] == nil)
+        #expect(cursors["com.apple.cursor.11"] == nil)
+        #expect(cursors["com.apple.cursor.12"] == nil)
+        #expect(cursors["com.apple.cursor.42"] == nil)
+        #expect(cursors["com.apple.cursor.43"] == nil)
     }
 
     @MainActor
@@ -680,6 +680,73 @@ struct CapeExporterTests {
         #expect(dragCopy?["PointsHigh"] as? Double == 24.0)
         #expect(dragCopy?["HotSpotX"] as? Double == 2.0)
         #expect(dragCopy?["HotSpotY"] as? Double == 2.0)
+    }
+
+    @MainActor
+    @Test
+    func supplementalAssignmentsStayEmptyUntilManuallyOverridden() throws {
+        func makeTempDirectory() throws -> URL {
+            let base = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            let directory = base.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            return directory
+        }
+
+        func makeTestCursorFile(color: NSColor, size: Int, at url: URL) throws {
+            let image = NSImage(size: NSSize(width: size, height: size))
+            image.lockFocus()
+            color.setFill()
+            NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+            image.unlockFocus()
+
+            guard
+                let tiff = image.tiffRepresentation,
+                let rep = NSBitmapImageRep(data: tiff),
+                let pngData = rep.representation(using: .png, properties: [:])
+            else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+
+            var data = Data()
+            data.append(contentsOf: [0x00, 0x00])
+            data.append(contentsOf: [0x02, 0x00])
+            data.append(contentsOf: [0x01, 0x00])
+            data.append(UInt8(size == 256 ? 0 : size))
+            data.append(UInt8(size == 256 ? 0 : size))
+            data.append(0x00)
+            data.append(0x00)
+            data.append(contentsOf: [0x00, 0x00])
+            data.append(contentsOf: [0x00, 0x00])
+
+            let bytesInRes = UInt32(pngData.count)
+            let imageOffset = UInt32(22)
+            data.append(contentsOf: withUnsafeBytes(of: bytesInRes.littleEndian, Array.init))
+            data.append(contentsOf: withUnsafeBytes(of: imageOffset.littleEndian, Array.init))
+            data.append(pngData)
+
+            try data.write(to: url)
+        }
+
+        let tempDirectory = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let folder = tempDirectory.appendingPathComponent("Theme", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let arrowURL = folder.appendingPathComponent("Normal.cur")
+        let linkURL = folder.appendingPathComponent("Link.cur")
+        try makeTestCursorFile(color: .white, size: 16, at: arrowURL)
+        try makeTestCursorFile(color: .blue, size: 18, at: linkURL)
+
+        let controller = CursorController()
+        controller.start()
+        controller.setThemeFolder(folder)
+
+        let assignment = controller.supplementalAssignment(for: .dragLink)
+        #expect(assignment.appliedPreview == nil)
+        #expect(assignment.sourceURL == nil)
+        #expect(!assignment.isResolved)
+        #expect(!assignment.isOverride)
     }
 
     @MainActor

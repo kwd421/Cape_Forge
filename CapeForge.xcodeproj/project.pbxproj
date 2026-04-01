@@ -16,6 +16,7 @@
 		A00000000000000000000027 /* ThemeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* ThemeResolver.swift */; };
 		A00000000000000000000028 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001A /* Assets.xcassets */; };
 		A00000000000000000000029 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* Localization.swift */; };
+		A0000000000000000000002A /* DefaultCursors in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* DefaultCursors */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		A00000000000000000000019 /* CapeForge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CapeForge.entitlements; sourceTree = "<group>"; };
 		A0000000000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A0000000000000000000001B /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		A0000000000000000000001C /* DefaultCursors */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/DefaultCursors; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				A00000000000000000000016 /* MacMouseCursorApp.swift */,
 				A0000000000000000000001B /* Localization.swift */,
 				A00000000000000000000017 /* ThemeResolver.swift */,
+				A0000000000000000000001C /* DefaultCursors */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -145,6 +148,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A00000000000000000000028 /* Assets.xcassets in Resources */,
+				A0000000000000000000002A /* DefaultCursors in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
