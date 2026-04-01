@@ -70,8 +70,9 @@ struct CapeExporter {
 
         for role in CursorRole.allCases {
             guard let animation = theme[role], let identifiers = roleIdentifiers[role] else { continue }
-            let dictionary = try cursorDictionary(for: animation, sizeMultiplier: sizeMultiplier)
             for identifier in identifiers {
+                let exportAnimation = animationForExport(role: role, identifier: identifier, animation: animation)
+                let dictionary = try cursorDictionary(for: exportAnimation, sizeMultiplier: sizeMultiplier)
                 cursors[identifier] = dictionary
             }
         }
@@ -105,6 +106,51 @@ struct CapeExporter {
 
         let data = try PropertyListSerialization.data(fromPropertyList: cape, format: .xml, options: 0)
         try data.write(to: url, options: .atomic)
+    }
+
+    private func animationForExport(role: CursorRole, identifier: String, animation: CursorAnimation) -> CursorAnimation {
+        // Mousecape can import animated Busy cursors, but very long `com.apple.cursor.4`
+        // animations can fall back to the red dot when the theme is applied.
+        // Keep Wait fully animated, but cap Busy to a shorter sequence.
+        guard role == .busy, identifier == "com.apple.cursor.4", animation.frames.count > 24 else {
+            return animation
+        }
+
+        return downsampleAnimation(animation, maxFrames: 24)
+    }
+
+    private func downsampleAnimation(_ animation: CursorAnimation, maxFrames: Int) -> CursorAnimation {
+        guard animation.frames.count > maxFrames, maxFrames > 0 else {
+            return animation
+        }
+
+        let sourceFrames = animation.frames
+        let sourceCount = sourceFrames.count
+        let totalDuration = sourceFrames.reduce(0.0) { $0 + $1.delay }
+        let targetDelay = totalDuration / Double(maxFrames)
+        var reducedFrames: [CursorFrame] = []
+        reducedFrames.reserveCapacity(maxFrames)
+
+        for bucket in 0..<maxFrames {
+            let startIndex = Int((Double(bucket) * Double(sourceCount)) / Double(maxFrames))
+            let endIndex = Int((Double(bucket + 1) * Double(sourceCount)) / Double(maxFrames))
+            let clampedEnd = max(endIndex, startIndex + 1)
+            let range = startIndex..<min(clampedEnd, sourceCount)
+            let representativeIndex = min(startIndex + range.count / 2, sourceCount - 1)
+            let representative = sourceFrames[representativeIndex]
+            reducedFrames.append(
+                CursorFrame(
+                    image: representative.image,
+                    delay: targetDelay > 0 ? targetDelay : representative.delay
+                )
+            )
+        }
+
+        return CursorAnimation(
+            frames: reducedFrames,
+            hotspot: animation.hotspot,
+            canvasSize: animation.canvasSize
+        )
     }
 
     private func cursorDictionary(for animation: CursorAnimation, sizeMultiplier: Double) throws -> [String: Any] {

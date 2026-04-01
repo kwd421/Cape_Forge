@@ -956,6 +956,142 @@ struct CapeExporterTests {
         #expect(FileManager.default.fileExists(atPath: exportURL.path))
         print("EXPORTED_CAPE_PATH=\(exportURL.path)")
     }
+
+    @MainActor
+    @Test
+    func capsBusyFramesAtTwentyFourWhileKeepingWaitAnimated() throws {
+        let firstImage = NSImage(size: NSSize(width: 16, height: 16))
+        firstImage.lockFocus()
+        NSColor.white.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 16, height: 16)).fill()
+        firstImage.unlockFocus()
+
+        let secondImage = NSImage(size: NSSize(width: 16, height: 16))
+        secondImage.lockFocus()
+        NSColor.black.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 16, height: 16)).fill()
+        secondImage.unlockFocus()
+
+        let animation = CursorAnimation(
+            frames: [
+                CursorFrame(image: firstImage, delay: 0.1),
+                CursorFrame(image: secondImage, delay: 0.1),
+                CursorFrame(image: firstImage, delay: 0.1)
+            ],
+            hotspot: CGPoint(x: 1, y: 1),
+            canvasSize: CGSize(width: 16, height: 16)
+        )
+        let theme = CursorTheme(animations: [
+            .busy: animation,
+            .working: animation
+        ])
+
+        let tempURL = temporaryCapeURL()
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        try CapeExporter().exportCape(
+            name: "Busy Static",
+            author: "Tester",
+            identifier: "local.test.busy-static",
+            theme: theme,
+            to: tempURL
+        )
+
+        let data = try Data(contentsOf: tempURL)
+        let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
+        let busy = cursors["com.apple.cursor.4"] as? [String: Any]
+        let wait = cursors["com.apple.coregraphics.Wait"] as? [String: Any]
+
+        #expect(busy?["FrameCount"] as? Int == 3)
+        #expect(wait?["FrameCount"] as? Int == 3)
+    }
+
+    @MainActor
+    @Test
+    func truncatesBusyAnimationWhenItExceedsTwentyFourFrames() throws {
+        let image = NSImage(size: NSSize(width: 16, height: 16))
+        image.lockFocus()
+        NSColor.white.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 16, height: 16)).fill()
+        image.unlockFocus()
+
+        let frames = (0..<36).map { _ in
+            CursorFrame(image: image, delay: 0.1)
+        }
+        let animation = CursorAnimation(
+            frames: frames,
+            hotspot: CGPoint(x: 1, y: 1),
+            canvasSize: CGSize(width: 16, height: 16)
+        )
+        let theme = CursorTheme(animations: [
+            .busy: animation
+        ])
+
+        let tempURL = temporaryCapeURL()
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        try CapeExporter().exportCape(
+            name: "Busy Capped",
+            author: "Tester",
+            identifier: "local.test.busy-capped",
+            theme: theme,
+            to: tempURL
+        )
+
+        let data = try Data(contentsOf: tempURL)
+        let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
+        let busy = cursors["com.apple.cursor.4"] as? [String: Any]
+
+        #expect(busy?["FrameCount"] as? Int == 24)
+    }
+
+    @MainActor
+    @Test
+    func downsampledBusyPreservesOverallDuration() throws {
+        func solidImage(_ color: NSColor) -> NSImage {
+            let image = NSImage(size: NSSize(width: 16, height: 16))
+            image.lockFocus()
+            color.setFill()
+            NSBezierPath(rect: NSRect(x: 0, y: 0, width: 16, height: 16)).fill()
+            image.unlockFocus()
+            return image
+        }
+
+        let frames: [CursorFrame] = (0..<36).map { index in
+            let color: NSColor = index.isMultiple(of: 2) ? .white : .black
+            return CursorFrame(image: solidImage(color), delay: 0.05)
+        }
+
+        let animation = CursorAnimation(
+            frames: frames,
+            hotspot: CGPoint(x: 1, y: 1),
+            canvasSize: CGSize(width: 16, height: 16)
+        )
+        let theme = CursorTheme(animations: [.busy: animation])
+
+        let tempURL = temporaryCapeURL()
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        try CapeExporter().exportCape(
+            name: "Busy Downsampled",
+            author: "Tester",
+            identifier: "local.test.busy-downsampled",
+            theme: theme,
+            to: tempURL
+        )
+
+        let data = try Data(contentsOf: tempURL)
+        let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        let cursors = plist?["Cursors"] as? [String: Any] ?? [:]
+        let busy = cursors["com.apple.cursor.4"] as? [String: Any]
+
+        let frameCount = busy?["FrameCount"] as? Int ?? 0
+        let frameDuration = busy?["FrameDuration"] as? Double ?? 0
+        #expect(frameCount == 24)
+        #expect(abs((Double(frameCount) * frameDuration) - 1.8) < 0.001)
+    }
 }
 
 private func temporaryCapeURL() -> URL {
